@@ -1,0 +1,309 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Modern Colorful SaaS Dashboard Design System */
+
+@layer base {
+  :root {
+    /* Light Theme Colors */
+    --background: 0 0% 100%;
+    --foreground: 240 10% 3.9%;
+
+    /* Card System */
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 3.9%;
+    --card-border: 240 6% 90%;
+
+    /* Glass Card Variant */
+    --glass-card: 240 10% 98%;
+    --glass-border: 240 20% 85%;
+
+    /* Interactive Elements */
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 3.9%;
+
+    /* Primary Brand Colors - Vibrant Blue */
+    --primary: 217 91% 60%;
+    --primary-foreground: 0 0% 98%;
+    --primary-glow: 217 91% 70%;
+
+    /* Secondary - Electric Purple */
+    --secondary: 258 90% 66%;
+    --secondary-foreground: 0 0% 98%;
+    --secondary-glow: 258 90% 76%;
+
+    /* Accent - Emerald Green */
+    --accent: 142 86% 58%;
+    --accent-foreground: 0 0% 98%;
+    --accent-glow: 142 86% 68%;
+
+    /* Additional Brand Colors */
+    --orange: 25 95% 53%;
+    --orange-foreground: 0 0% 98%;
+    --pink: 330 81% 60%;
+    --pink-foreground: 0 0% 98%;
+    --cyan: 189 94% 57%;
+    --cyan-foreground: 0 0% 98%;
+
+    /* Muted Elements */
+    --muted: 240 5% 96%;
+    --muted-foreground: 240 3.8% 46.1%;
+
+    /* Success/Error States */
+    --success: 142 86% 58%;
+    --success-foreground: 0 0% 98%;
+    --warning: 45 100% 51%;
+    --warning-foreground: 0 0% 98%;
+    --destructive: 0 75% 60%;
+    --destructive-foreground: 0 0% 98%;
+
+    /* Borders and Inputs */
+    --border: 240 6% 90%;
+    --input: 240 6% 90%;
+    --ring: 217 91% 60%;
+
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(217 91% 60%), hsl(258 90% 66%));
+    --gradient-secondary: linear-gradient(135deg, hsl(258 90% 66%), hsl(142 86% 58%));
+    --gradient-accent: linear-gradient(135deg, hsl(142 86% 58%), hsl(189 94% 57%));
+    --gradient-warm: linear-gradient(135deg, hsl(25 95% 53%), hsl(330 81% 60%));
+    --gradient-cool: linear-gradient(135deg, hsl(189 94% 57%), hsl(217 91% 60%));
+    --gradient-background: linear-gradient(135deg, hsl(240 100% 99%), hsl(217 91% 97%));
+    --gradient-glow: linear-gradient(135deg, hsl(217 91% 60% / 0.1), hsl(258 90% 66% / 0.1));
+
+    /* Shadows */
+    --shadow-sm: 0 1px 2px 0 hsl(240 3.8% 46.1% / 0.1);
+    --shadow-md: 0 4px 6px -1px hsl(240 3.8% 46.1% / 0.1), 0 2px 4px -1px hsl(240 3.8% 46.1% / 0.06);
+    --shadow-lg: 0 10px 15px -3px hsl(240 3.8% 46.1% / 0.1), 0 4px 6px -2px hsl(240 3.8% 46.1% / 0.05);
+    --shadow-glow: 0 0 40px hsl(217 91% 60% / 0.15);
+    --shadow-glow-purple: 0 0 40px hsl(258 90% 66% / 0.15);
+    --shadow-glow-green: 0 0 40px hsl(142 86% 58% / 0.15);
+    --shadow-glow-orange: 0 0 40px hsl(25 95% 53% / 0.15);
+
+    /* Animations */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-spring: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+
+    /* Sidebar Colors */
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.9% 10%;
+    --sidebar-primary: 217 91% 60%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 240 6% 90%;
+    --sidebar-ring: 217 91% 60%;
+
+    --radius: 0.75rem;
+  }
+
+  .dark {
+    /* Dark Theme Colors */
+    --background: 240 10% 3.9%;
+    --foreground: 0 0% 98%;
+
+    /* Card System */  
+    --card: 240 10% 6%;
+    --card-foreground: 0 0% 98%;
+    --card-border: 240 7% 15%;
+
+    /* Glass Card Variant */
+    --glass-card: 240 10% 8%;
+    --glass-border: 240 15% 20%;
+
+    /* Interactive Elements */
+    --popover: 240 10% 6%;
+    --popover-foreground: 0 0% 98%;
+
+    /* Primary Brand Colors - Vibrant Blue */
+    --primary: 217 91% 60%;
+    --primary-foreground: 0 0% 98%;
+    --primary-glow: 217 91% 70%;
+
+    /* Secondary - Electric Purple */
+    --secondary: 258 90% 66%;
+    --secondary-foreground: 0 0% 98%;
+    --secondary-glow: 258 90% 76%;
+
+    /* Accent - Emerald Green */
+    --accent: 142 86% 58%;
+    --accent-foreground: 0 0% 98%;
+    --accent-glow: 142 86% 68%;
+
+    /* Additional Brand Colors */
+    --orange: 25 95% 53%;
+    --orange-foreground: 0 0% 98%;
+    --pink: 330 81% 60%;
+    --pink-foreground: 0 0% 98%;
+    --cyan: 189 94% 57%;
+    --cyan-foreground: 0 0% 98%;
+
+    /* Muted Elements */
+    --muted: 240 5% 15%;
+    --muted-foreground: 240 5% 65%;
+
+    /* Success/Error States */
+    --success: 142 86% 58%;
+    --success-foreground: 0 0% 98%;
+    --warning: 45 100% 51%;
+    --warning-foreground: 0 0% 98%;
+    --destructive: 0 75% 60%;
+    --destructive-foreground: 0 0% 98%;
+
+    /* Borders and Inputs */
+    --border: 240 7% 15%;
+    --input: 240 7% 15%;
+    --ring: 217 91% 60%;
+
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(217 91% 60%), hsl(258 90% 66%));
+    --gradient-secondary: linear-gradient(135deg, hsl(258 90% 66%), hsl(142 86% 58%));
+    --gradient-accent: linear-gradient(135deg, hsl(142 86% 58%), hsl(189 94% 57%));
+    --gradient-warm: linear-gradient(135deg, hsl(25 95% 53%), hsl(330 81% 60%));
+    --gradient-cool: linear-gradient(135deg, hsl(189 94% 57%), hsl(217 91% 60%));
+    --gradient-background: linear-gradient(135deg, hsl(240 10% 3.9%), hsl(240 7% 6%));
+    --gradient-glow: linear-gradient(135deg, hsl(217 91% 60% / 0.1), hsl(258 90% 66% / 0.1));
+
+    /* Shadows */
+    --shadow-sm: 0 1px 2px 0 hsl(240 10% 3.9% / 0.5);
+    --shadow-md: 0 4px 6px -1px hsl(240 10% 3.9% / 0.3), 0 2px 4px -1px hsl(240 10% 3.9% / 0.1);
+    --shadow-lg: 0 10px 15px -3px hsl(240 10% 3.9% / 0.3), 0 4px 6px -2px hsl(240 10% 3.9% / 0.1);
+    --shadow-glow: 0 0 40px hsl(217 91% 60% / 0.15);
+    --shadow-glow-purple: 0 0 40px hsl(258 90% 66% / 0.15);
+    --shadow-glow-green: 0 0 40px hsl(142 86% 58% / 0.15);
+    --shadow-glow-orange: 0 0 40px hsl(25 95% 53% / 0.15);
+
+    /* Sidebar Colors */
+    --sidebar-background: 240 10% 4%;
+    --sidebar-foreground: 0 0% 90%;
+    --sidebar-primary: 217 91% 60%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 7% 12%;
+    --sidebar-accent-foreground: 0 0% 90%;
+    --sidebar-border: 240 7% 15%;
+    --sidebar-ring: 217 91% 60%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-gradient-background text-foreground;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Space Grotesk', system-ui, -apple-system, sans-serif;
+    font-weight: 600;
+  }
+}
+
+@layer utilities {
+  /* Gradient Utilities */
+  .bg-gradient-primary {
+    background: var(--gradient-primary);
+  }
+  
+  .bg-gradient-secondary {
+    background: var(--gradient-secondary);
+  }
+  
+  .bg-gradient-accent {
+    background: var(--gradient-accent);
+  }
+  
+  .bg-gradient-warm {
+    background: var(--gradient-warm);
+  }
+  
+  .bg-gradient-cool {
+    background: var(--gradient-cool);
+  }
+  
+  .bg-gradient-background {
+    background: var(--gradient-background);
+  }
+  
+  .bg-gradient-glow {
+    background: var(--gradient-glow);
+  }
+
+  /* Glass Effect */
+  .glass-card {
+    background: hsl(var(--glass-card) / 0.8);
+    border: 1px solid hsl(var(--glass-border) / 0.2);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  /* Shadow Utilities */
+  .shadow-glow {
+    box-shadow: var(--shadow-glow);
+  }
+  
+  .shadow-glow-purple {
+    box-shadow: var(--shadow-glow-purple);
+  }
+  
+  .shadow-glow-green {
+    box-shadow: var(--shadow-glow-green);
+  }
+  
+  .shadow-glow-orange {
+    box-shadow: var(--shadow-glow-orange);
+  }
+
+  /* Animation Utilities */
+  .transition-smooth {
+    transition: var(--transition-smooth);
+  }
+  
+  .transition-spring {
+    transition: var(--transition-spring);
+  }
+
+  /* Hover Effects */
+  .hover-glow {
+    transition: var(--transition-smooth);
+  }
+  
+  .hover-glow:hover {
+    box-shadow: var(--shadow-glow);
+    transform: translateY(-2px);
+  }
+
+  .hover-scale {
+    transition: var(--transition-spring);
+  }
+  
+  .hover-scale:hover {
+    transform: scale(1.02);
+  }
+
+  /* Text Gradients */
+  .text-gradient-primary {
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  
+  .text-gradient-secondary {
+    background: var(--gradient-secondary);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  
+  .text-gradient-warm {
+    background: var(--gradient-warm);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+}
