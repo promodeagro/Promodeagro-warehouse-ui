@@ -56,12 +56,11 @@ function App() {
                   
                   {/* Inventory Management */}
                   <Route path="/inventory/products" element={<ProductManagement />} />
-                  {/* Temporarily disabled Inventory routes */}
-                  {/* <Route path="/inventory/tasks" element={<InventoryTasks />} /> */}
-                  {/* <Route path="/inventory/receiving" element={<StockReceiving />} /> */}
-                  {/* <Route path="/inventory/quality" element={<QualityCheck />} /> */}
+                  <Route path="/inventory/tasks" element={<InventoryTasks />} />
+                  <Route path="/inventory/receiving" element={<StockReceiving />} />
+                  <Route path="/inventory/quality" element={<QualityCheck />} />
                   <Route path="/inventory/categories" element={<ProductCategoryManagement />} />
-                  {/* <Route path="/inventory/quick-actions" element={<QuickActions />} /> */}
+                  <Route path="/inventory/quick-actions" element={<QuickActions />} />
                   
                   {/* Delivery Management */}
                   <Route path="/delivery/orders" element={<OrderDelivery />} />
