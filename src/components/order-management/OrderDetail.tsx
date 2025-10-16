@@ -42,7 +42,7 @@ const OrderDetail = () => {
 
   const handleToggleProduct = (productId: string, checked: boolean) => {
     if (checked) {
-      setSelectedProducts({...selectedProducts, [productId]: 0});
+      setSelectedProducts({...selectedProducts, [productId]: 1});
     } else {
       const newSelected = {...selectedProducts};
       delete newSelected[productId];
@@ -55,9 +55,7 @@ const OrderDetail = () => {
   };
 
   const handleAddItems = () => {
-    const newItems = Object.entries(selectedProducts)
-      .filter(([, quantity]) => quantity > 0)
-      .map(([productId, quantity]) => {
+    const newItems = Object.entries(selectedProducts).map(([productId, quantity]) => {
       // Mock product data - in real app, this would come from API
       const mockProducts = [
         { id: 'P001', name: 'Organic Tomatoes', price: 45, unit: 'kg' },
@@ -333,12 +331,12 @@ const OrderDetail = () => {
                                 <TableCell>{product.unit}</TableCell>
                                 <TableCell>₹{product.price}</TableCell>
                                 <TableCell>
-                                  {selectedProducts[product.id] !== undefined && (
+                                  {selectedProducts[product.id] && (
                                     <Input
                                       type="number"
                                       min="1"
-                                      value={selectedProducts[product.id] === 0 ? '' : selectedProducts[product.id]}
-                                      onChange={(e) => handleQuantityChange(product.id, parseInt(e.target.value) || 0)}
+                                      value={selectedProducts[product.id]}
+                                      onChange={(e) => handleQuantityChange(product.id, parseInt(e.target.value) || 1)}
                                       className="w-20"
                                     />
                                   )}
@@ -354,9 +352,9 @@ const OrderDetail = () => {
                         </Button>
                         <Button 
                           onClick={handleAddItems} 
-                          disabled={Object.values(selectedProducts).filter(q => q > 0).length === 0}
+                          disabled={Object.keys(selectedProducts).length === 0}
                         >
-                          Done ({Object.values(selectedProducts).filter(q => q > 0).length} items selected)
+                          Done ({Object.keys(selectedProducts).length} items selected)
                         </Button>
                       </div>
                     </div>
