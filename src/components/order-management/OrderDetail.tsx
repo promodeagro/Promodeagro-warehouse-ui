@@ -1,0 +1,718 @@
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { StatusBadge } from "@/components/StatusBadge";
+import { orders, riders } from "@/data/orderData";
+import { ArrowLeft, Phone, MapPin, Clock, CreditCard, Package, User, Trash2, Plus, Printer, X, RotateCcw, Calendar } from "lucide-react";
+import { Link, useParams, useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Textarea } from "@/components/ui/textarea";
+import { toast } from "sonner";
+import { useState } from "react";
+
+const OrderDetail = () => {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const order = orders.find(o => o.id === id);
+  const [orderItems, setOrderItems] = useState(order?.items || []);
+  const [removedItems, setRemovedItems] = useState<typeof order.items>([]);
+  const [showAddItemDialog, setShowAddItemDialog] = useState(false);
+  const [selectedProducts, setSelectedProducts] = useState<{[key: string]: number}>({});
+  const [showDiscountDialog, setShowDiscountDialog] = useState(false);
+  const [discountAmount, setDiscountAmount] = useState<number>(0);
+  const [orderStatus, setOrderStatus] = useState(order?.status || 'Placed');
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [cancelReason, setCancelReason] = useState('');
+
+  if (!order) {
+    return <div>Order not found</div>;
+  }
+
+  const handleRemoveItem = (itemId: string) => {
+    const item = orderItems.find(i => i.id === itemId);
+    if (item) {
+      setRemovedItems([...removedItems, item]);
+      setOrderItems(orderItems.filter(i => i.id !== itemId));
+    }
+  };
+
+  const handleToggleProduct = (productId: string, checked: boolean) => {
+    if (checked) {
+      setSelectedProducts({...selectedProducts, [productId]: 1});
+    } else {
+      const newSelected = {...selectedProducts};
+      delete newSelected[productId];
+      setSelectedProducts(newSelected);
+    }
+  };
+
+  const handleQuantityChange = (productId: string, quantity: number) => {
+    setSelectedProducts({...selectedProducts, [productId]: quantity});
+  };
+
+  const handleAddItems = () => {
+    const newItems = Object.entries(selectedProducts).map(([productId, quantity]) => {
+      // Mock product data - in real app, this would come from API
+      const mockProducts = [
+        { id: 'P001', name: 'Organic Tomatoes', price: 45, unit: 'kg' },
+        { id: 'P002', name: 'Fresh Potatoes', price: 30, unit: 'kg' },
+        { id: 'P003', name: 'Red Onions', price: 35, unit: 'kg' },
+        { id: 'P004', name: 'Shimla Apples', price: 120, unit: 'kg' },
+        { id: 'P005', name: 'Farm Bananas', price: 50, unit: 'dozen' },
+        { id: 'P006', name: 'Orange Carrots', price: 40, unit: 'kg' },
+        { id: 'P007', name: 'Fresh Spinach', price: 25, unit: 'bundle' },
+        { id: 'P008', name: 'Alphonso Mangoes', price: 180, unit: 'kg' },
+      ];
+      
+      const product = mockProducts.find(p => p.id === productId);
+      if (product) {
+        return {
+          id: `OI${Date.now()}_${productId}`,
+          product_id: product.id,
+          product_name: product.name,
+          quantity: quantity,
+          price: product.price,
+          subtotal: product.price * quantity,
+          is_substituted: false
+        };
+      }
+      return null;
+    }).filter(item => item !== null);
+    
+    setOrderItems([...orderItems, ...newItems as any]);
+    setShowAddItemDialog(false);
+    setSelectedProducts({});
+  };
+
+  const handleRestoreItem = (itemId: string) => {
+    const item = removedItems.find(i => i.id === itemId);
+    if (item) {
+      setOrderItems([...orderItems, item]);
+      setRemovedItems(removedItems.filter(i => i.id !== itemId));
+    }
+  };
+
+  const handleDeleteRemovedItem = (itemId: string) => {
+    setRemovedItems(removedItems.filter(i => i.id !== itemId));
+  };
+
+  const handleApplyDiscount = () => {
+    toast.success('Discount applied successfully');
+    setShowDiscountDialog(false);
+  };
+
+  const handleCancelOrder = () => {
+    if (!cancelReason.trim()) {
+      toast.error('Please enter a cancellation reason');
+      return;
+    }
+    setOrderStatus('Cancelled');
+    setShowCancelDialog(false);
+    toast.success('Order cancelled successfully');
+  };
+
+  const handleReAttempt = () => {
+    setShowCancelDialog(false);
+    setCancelReason('');
+    setOrderStatus('Placed');
+    toast.success('Order re-attempted successfully');
+  };
+
+  const handlePrintBill = () => {
+    window.print();
+    toast.success('Printing bill...');
+  };
+
+  const getProductUnit = (productName: string) => {
+    const mockProducts = [
+      { name: 'Organic Tomatoes', unit: 'kg' },
+      { name: 'Fresh Potatoes', unit: 'kg' },
+      { name: 'Red Onions', unit: 'kg' },
+      { name: 'Shimla Apples', unit: 'kg' },
+      { name: 'Farm Bananas', unit: 'dozen' },
+      { name: 'Orange Carrots', unit: 'kg' },
+      { name: 'Fresh Spinach', unit: 'bundle' },
+      { name: 'Alphonso Mangoes', unit: 'kg' },
+    ];
+    const product = mockProducts.find(p => p.name === productName);
+    return product?.unit || 'unit';
+  };
+
+  const subtotal = orderItems.reduce((sum, item) => sum + item.subtotal, 0);
+  const [shippingCharges, setShippingCharges] = useState<number>(0);
+  const [showShippingDialog, setShowShippingDialog] = useState(false);
+  const [addShipping, setAddShipping] = useState<string>('0');
+  const [subtractShipping, setSubtractShipping] = useState<string>('0');
+  const totalAmount = subtotal + shippingCharges - discountAmount;
+
+  const getPaymentStatus = (): 'Paid' | 'Pending' | 'Failed' => {
+    if (order.payment_mode === 'Online') {
+      // Online payment - check if failed
+      if (order.status === 'Failed') return 'Failed';
+      // Online payment successful
+      return 'Paid';
+    }
+    // COD orders - always Pending until delivered
+    if (order.status === 'Delivered') return 'Paid';
+    return 'Pending';
+  };
+
+  return (
+    <div className="min-h-screen bg-muted/30">
+      <header className="bg-card border-b sticky top-0 z-10 shadow-sm">
+        <div className="container mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Link to="/order-management/orders">
+                <Button variant="ghost" size="icon">
+                  <ArrowLeft className="h-5 w-5" />
+                </Button>
+              </Link>
+              <div>
+                <h1 className="text-2xl font-bold text-foreground">{order.order_number}</h1>
+                <p className="text-sm text-muted-foreground">Order Details</p>
+              </div>
+            </div>
+            {/* Action buttons moved to header right */}
+            <div className="flex items-center gap-5">
+              <Dialog open={showCancelDialog} onOpenChange={(open) => { setShowCancelDialog(open); if (!open) setCancelReason(''); }}>
+                <DialogTrigger asChild>
+                  {orderStatus === 'Cancelled' ? (
+                    <Button variant="outline" className="hover:bg-success/10" onClick={() => setShowCancelDialog(true)}>
+                      <RotateCcw className="h-4 w-4 mr-2" />
+                      Re Attempt
+                    </Button>
+                  ) : (
+                    <Button variant="outline" className="text-red-800 border-red-800 border-[1.5px] font-semibold hover:bg-transparent hover:text-red-800">
+                      Cancel Order
+                    </Button>
+                  )}
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>
+                      {orderStatus === 'Cancelled' ? 'Confirm Action' : 'Order Cancel Reason'}
+                    </DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    {orderStatus === 'Cancelled' ? (
+                      <>
+                        <p className="text-center text-muted-foreground">
+                          Are you sure you want to Reattempt This Order?
+                        </p>
+                        <div className="flex gap-3 justify-end">
+                          <Button variant="outline" onClick={() => setShowCancelDialog(false)}>
+                            Cancel
+                          </Button>
+                          <Button onClick={handleReAttempt} className="bg-success hover:bg-success/90">
+                            Confirm
+                          </Button>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="space-y-2 border-b pb-4">
+                          <p className="text-sm font-medium text-primary">Order ID: {order.order_number}</p>
+                          <div className="flex items-center gap-2">
+                            <p className="font-semibold">{order.customer_name}</p>
+                            <span
+                              className={`inline-flex items-center justify-center rounded-full px-3 h-6 text-xs font-medium leading-none ${
+                                order.payment_mode === 'Online'
+                                  ? 'bg-[#16a249] text-white'
+                                  : 'bg-[#000000] text-white'
+                              }`}
+                            >
+                              {order.payment_mode === 'Online' ? 'Prepaid' : 'COD'}
+                            </span>
+                          </div>
+                          <p className="text-sm text-muted-foreground">{order.address}</p>
+                          <p className="text-sm text-muted-foreground">{order.customer_phone}</p>
+                        </div>
+                        <div className="flex justify-between items-center border-b pb-4">
+                          <p className="font-medium">Payment: <span className="text-primary">₹{order.total_amount}</span></p>
+                          <p className="text-sm text-muted-foreground">{order.items.length} Items</p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium mb-2 block">Reason</label>
+                          <Textarea
+                            placeholder="Enter cancellation reason"
+                            value={cancelReason}
+                            onChange={(e) => setCancelReason(e.target.value)}
+                            className="min-h-[100px]"
+                          />
+                        </div>
+                        <div className="flex justify-end">
+                          <Button 
+                            variant="destructive"
+                            onClick={handleCancelOrder}
+                            disabled={!cancelReason.trim()}
+                          >
+                            Confirm Cancel
+                          </Button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </DialogContent>
+              </Dialog>
+              <Button 
+                variant="default"
+                onClick={handlePrintBill}
+              >
+                <Printer className="h-4 w-4 mr-2" />
+                Print Bill
+              </Button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main className="container mx-auto px-6 py-8">
+        <div className="max-w-[1200px] mx-auto space-y-6">
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_auto] gap-7">
+          <div className="space-y-6">
+            <Card className="w-full">
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <Package className="h-5 w-5" />
+                  Order Items - {String(orderItems.length).padStart(2, '0')}
+                </CardTitle>
+                <Dialog open={showAddItemDialog} onOpenChange={(open) => { setShowAddItemDialog(open); if (!open) { setSelectedProducts({}); } }}>
+                  <DialogTrigger asChild>
+                    <Button size="sm" variant="outline">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Items
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-4xl h-[calc(80vh+30px)]">
+                    <DialogHeader>
+                      <DialogTitle>Add Items</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <Input placeholder="Search items..." className="w-full" />
+                      <div className="border rounded-lg overflow-hidden max-h-[calc(56vh+0px)] overflow-y-auto">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead className="w-12"></TableHead>
+                              <TableHead>Item Name</TableHead>
+                              <TableHead>Category</TableHead>
+                              <TableHead>Sub Category</TableHead>
+                              <TableHead>Unit</TableHead>
+                              <TableHead>Selling Price</TableHead>
+                              <TableHead className="w-32">Quantity</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {[
+                              { id: 'P001', name: 'Organic Tomatoes', category: 'Vegetables', subCategory: 'Fresh Vegetables', unit: 'kg', price: 45 },
+                              { id: 'P002', name: 'Fresh Potatoes', category: 'Vegetables', subCategory: 'Fresh Vegetables', unit: 'kg', price: 30 },
+                              { id: 'P003', name: 'Red Onions', category: 'Vegetables', subCategory: 'Fresh Vegetables', unit: 'kg', price: 35 },
+                              { id: 'P004', name: 'Shimla Apples', category: 'Fruits', subCategory: 'Fresh Fruits', unit: 'kg', price: 120 },
+                              { id: 'P005', name: 'Farm Bananas', category: 'Fruits', subCategory: 'Fresh Fruits', unit: 'dozen', price: 50 },
+                              { id: 'P006', name: 'Orange Carrots', category: 'Vegetables', subCategory: 'Fresh Vegetables', unit: 'kg', price: 40 },
+                              { id: 'P007', name: 'Fresh Spinach', category: 'Greens', subCategory: 'Leafy Greens', unit: 'bundle', price: 25 },
+                              { id: 'P008', name: 'Alphonso Mangoes', category: 'Fruits', subCategory: 'Fresh Fruits', unit: 'kg', price: 180 },
+                            ].map((product) => (
+                              <TableRow key={product.id}>
+                                <TableCell>
+                                  <Checkbox
+                                    checked={!!selectedProducts[product.id]}
+                                    onCheckedChange={(checked) => handleToggleProduct(product.id, checked as boolean)}
+                                  />
+                                </TableCell>
+                                <TableCell className="font-medium">{product.name}</TableCell>
+                                <TableCell>{product.category}</TableCell>
+                                <TableCell>{product.subCategory}</TableCell>
+                                <TableCell>{product.unit}</TableCell>
+                                <TableCell>₹{product.price}</TableCell>
+                                <TableCell>
+                                  {selectedProducts[product.id] && (
+                                    <Input
+                                      type="number"
+                                      min="1"
+                                      value={selectedProducts[product.id]}
+                                      onChange={(e) => handleQuantityChange(product.id, parseInt(e.target.value) || 1)}
+                                      className="w-20"
+                                    />
+                                  )}
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                      <div className="flex justify-between items-center pt-4">
+                        <Button variant="outline" onClick={() => { setShowAddItemDialog(false); setSelectedProducts({}); }}>
+                          Cancel
+                        </Button>
+                        <Button 
+                          onClick={handleAddItems} 
+                          disabled={Object.keys(selectedProducts).length === 0}
+                        >
+                          Done ({Object.keys(selectedProducts).length} items selected)
+                        </Button>
+                      </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {orderItems.map((item) => (
+                    <div key={item.id} className="flex items-center justify-between p-4 rounded-lg border">
+                      <div className="flex items-center gap-4 flex-1">
+                        <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center">
+                          <Package className="h-6 w-6 text-primary" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-medium text-foreground">{item.product_name}</p>
+                          <p className="text-sm text-muted-foreground">
+                            Qty: {item.quantity} • {item.quantity * 500}{getProductUnit(item.product_name)} • ₹{item.price} each
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <p className="font-semibold text-foreground">₹{item.subtotal}</p>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => handleRemoveItem(item.id)}
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+
+                  {removedItems.length > 0 && (
+                    <div className="mt-6 pt-6 border-t">
+                      <h4 className="font-semibold text-foreground mb-3">Out Of Stock</h4>
+                      {removedItems.map((item) => (
+                        <div key={item.id} className="flex items-center justify-between p-4 rounded-lg border border-destructive/20 bg-destructive/5 mb-2">
+                          <div className="flex-1">
+                            <p className="font-medium text-foreground">{item.product_name}</p>
+                            <p className="text-sm text-muted-foreground">
+                              Qty: {item.quantity} • {item.quantity * 500}{getProductUnit(item.product_name)} • ₹{item.price} each
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Badge variant="destructive">Out Of Stock</Badge>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              onClick={() => handleRestoreItem(item.id)}
+                              title="Restore item"
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              onClick={() => handleDeleteRemovedItem(item.id)}
+                              title="Delete item permanently"
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="border-t pt-4 mt-4 space-y-3">
+                    <div className="flex justify-between items-center text-sm">
+                      <p className="text-muted-foreground">Sub Total:</p>
+                      <p className="font-medium text-foreground">₹{subtotal.toFixed(2)}</p>
+                    </div>
+                    <div className="flex justify-between items-center text-sm">
+                      <Dialog open={showShippingDialog} onOpenChange={setShowShippingDialog}>
+                        <DialogTrigger asChild>
+                          <Button variant="link" size="sm" className="h-auto p-0 text-primary">Shipping Charges</Button>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-md">
+                          <DialogHeader>
+                            <DialogTitle>Shipping Charges</DialogTitle>
+                          </DialogHeader>
+                          <div className="space-y-4">
+                            <p className="text-sm text-muted-foreground">
+                              Are you sure you want to apply this Shipping charges to your order?
+                            </p>
+                            <div className="flex items-center justify-between">
+                              <label className="text-sm font-medium">Final Amount</label>
+                              <p className="text-lg font-bold">₹{(subtotal + shippingCharges + (parseFloat(addShipping) || 0) - (parseFloat(subtractShipping) || 0) - discountAmount).toFixed(2)}</p>
+                            </div>
+                            <div className="flex items-center justify-between gap-4">
+                              <label className="text-sm text-muted-foreground">Adding charges</label>
+                              <div className="relative">
+                                <span className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground">₹ +</span>
+                                <Input
+                                  value={addShipping}
+                                  onChange={(e) => setAddShipping(e.target.value)}
+                                  className="pl-10 w-[120px] text-right"
+                                  placeholder="0"
+                                />
+                              </div>
+                            </div>
+                            <div className="flex items-center justify-between gap-4">
+                              <label className="text-sm text-muted-foreground">Subtract charges</label>
+                              <div className="relative">
+                                <span className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground">₹ -</span>
+                                <Input
+                                  value={subtractShipping}
+                                  onChange={(e) => setSubtractShipping(e.target.value)}
+                                  className="pl-10 w-[120px] text-right"
+                                  placeholder="0"
+                                />
+                              </div>
+                            </div>
+                            <div className="h-[0.1px]" />
+                            <div className="flex justify-end gap-[20px] mt-0">
+                              <Button variant="outline" onClick={() => { setShowShippingDialog(false); setAddShipping('0'); setSubtractShipping('0'); }}>Cancel</Button>
+                              <Button onClick={() => {
+                                const add = parseFloat(addShipping) || 0;
+                                const sub = parseFloat(subtractShipping) || 0;
+                                const next = shippingCharges + add - sub;
+                                setShippingCharges(next);
+                                setAddShipping('0');
+                                setSubtractShipping('0');
+                                setShowShippingDialog(false);
+                              }}>Confirm</Button>
+                            </div>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
+                      <div className="flex items-center gap-2">
+                        {shippingCharges !== 0 && (
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-6 w-6"
+                            title="Clear shipping charges"
+                            onClick={() => setShippingCharges(0)}
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </Button>
+                        )}
+                        <p className="font-medium text-primary">
+                          <span className="mr-[1px]">{shippingCharges > 0 ? '+' : shippingCharges < 0 ? '-' : ''}</span>
+                          <span className="mr-[1px]">₹</span>
+                          <span>{Math.abs(shippingCharges).toFixed(2)}</span>
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex justify-between items-center text-sm">
+                      <div className="flex items-center gap-2">
+                        <Dialog open={showDiscountDialog} onOpenChange={setShowDiscountDialog}>
+                          <DialogTrigger asChild>
+                            <Button variant="link" size="sm" className="h-auto p-0 text-primary">
+                              Add Discount
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="max-w-md">
+                            <DialogHeader>
+                              <DialogTitle>Add Discount</DialogTitle>
+                            </DialogHeader>
+                            <div className="space-y-4">
+                              <p className="text-sm text-muted-foreground">
+                                Are you sure you want to apply this discount to your order?
+                              </p>
+                              <div className="flex items-center justify-between">
+                                <label className="text-sm font-medium">Final Amount</label>
+                                <p className="text-lg font-bold">₹{(subtotal + shippingCharges - (discountAmount || 0)).toFixed(2)}</p>
+                              </div>
+                              <div className="flex items-center justify-between gap-4">
+                                <label className="text-sm text-muted-foreground">Discount</label>
+                                <div className="relative">
+                                  <span className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground">₹</span>
+                                  <Input
+                                    type="text"
+                                    inputMode="decimal"
+                                    pattern="[0-9]*[.]?[0-9]*"
+                                    value={String(discountAmount)}
+                                    onChange={(e) => setDiscountAmount(parseFloat(e.target.value) || 0)}
+                                    className="pl-6 w-[120px] text-right"
+                                    placeholder="0"
+                                  />
+                                </div>
+                              </div>
+                              <div className="h-[0.1px]" />
+                              <div className="flex justify-end gap-[20px] mt-0">
+                                <Button variant="outline" onClick={() => setShowDiscountDialog(false)}>
+                                  Cancel
+                                </Button>
+                                <Button onClick={handleApplyDiscount}>
+                                  Confirm
+                                </Button>
+                              </div>
+                            </div>
+                          </DialogContent>
+                        </Dialog>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {discountAmount > 0 && (
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-6 w-6"
+                            title="Clear discount"
+                            onClick={() => setDiscountAmount(0)}
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </Button>
+                        )}
+                        <p className="font-medium text-primary">₹{discountAmount.toFixed(2)}</p>
+                      </div>
+                    </div>
+                    <div className="flex justify-between items-center pt-3 border-t">
+                      <p className="text-lg font-semibold text-foreground">Total Amount:</p>
+                      <p className="text-2xl font-bold text-primary">₹{totalAmount.toFixed(2)}</p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {order.status === 'Packed' && (
+              <Card className="w-full">
+                <CardHeader>
+                  <CardTitle>Assign Rider</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex gap-4">
+                    <Select>
+                      <SelectTrigger className="flex-1">
+                        <SelectValue placeholder="Select rider" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {riders.filter(r => r.current_status === 'Available').map((rider) => (
+                          <SelectItem key={rider.id} value={rider.id}>
+                            {rider.name} - {rider.vehicle_number} (⭐ {rider.rating})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button>Assign & Dispatch</Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+
+          <div className="space-y-8 w-full lg:w-[450px]">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <User className="h-5 w-5" />
+                  Customer Details
+                </CardTitle>
+                <div className="ml-6">
+                  <StatusBadge status={order.status} />
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <p className="text-sm text-muted-foreground mb-2">Name</p>
+                  <div className="flex items-center gap-2">
+                    <p className="font-bold text-foreground">{order.customer_name}</p>
+                    <span
+                      className={`inline-flex items-center justify-center rounded-full px-3 h-6 text-xs font-medium leading-none ${
+                        order.payment_mode === 'Online'
+                          ? 'bg-[#16a249] text-white'
+                          : 'bg-[#000000] text-white'
+                      }`}
+                    >
+                      {order.payment_mode === 'Online' ? 'Prepaid' : 'COD'}
+                    </span>
+                  </div>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground mb-2">Phone</p>
+                  <div className="flex items-center gap-2">
+                    <Phone className="h-4 w-4 text-muted-foreground" />
+                    <p className="font-medium text-foreground">{order.customer_phone}</p>
+                  </div>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground mb-2">Delivery Address</p>
+                  <div className="flex items-start gap-2">
+                    <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
+                    <p className="text-sm font-semibold text-foreground leading-snug max-w-[400px]">{order.address}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="w-full lg:w-[450px]">
+              <CardHeader>
+                <CardTitle>Order Info</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center gap-3">
+                  <Calendar className="h-5 w-5 text-muted-foreground" />
+                  <div className="flex-1">
+                    <p className="text-sm text-muted-foreground">Order Date</p>
+                    <p className="font-medium text-foreground">
+                      {new Date(order.created_at).toLocaleDateString('en-GB', { 
+                        day: '2-digit', 
+                        month: '2-digit', 
+                        year: 'numeric' 
+                      })}, {new Date(order.created_at).toLocaleTimeString('en-US', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        hour12: true
+                      })}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Clock className="h-5 w-5 text-muted-foreground" />
+                  <div className="flex-1">
+                    <p className="text-sm text-muted-foreground">Delivery Slot</p>
+                    <p className="font-medium text-foreground">{order.delivery_slot}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Package className="h-5 w-5 text-muted-foreground" />
+                  <div className="flex-1">
+                    <p className="text-sm text-muted-foreground">Total Price</p>
+                    <p className="font-bold text-lg text-foreground">₹{totalAmount.toFixed(2)}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <CreditCard className="h-5 w-5 text-muted-foreground" />
+                  <div className="flex-1">
+                    <p className="text-sm text-muted-foreground">Payment Type</p>
+                    <p className="font-medium text-foreground">{order.payment_mode === 'Online' ? 'Prepaid' : 'COD'}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <CreditCard className="h-5 w-5 text-muted-foreground" />
+                  <div className="flex-1">
+                    <p className="text-sm text-muted-foreground">Payment Status</p>
+                    <Badge variant={getPaymentStatus() === 'Paid' ? 'default' : getPaymentStatus() === 'Failed' ? 'destructive' : 'secondary'}>
+                      {getPaymentStatus()}
+                    </Badge>
+                  </div>
+                </div>
+                {order.notes && (
+                  <div className="pt-4 border-t">
+                    <p className="text-sm text-muted-foreground mb-1">Notes</p>
+                    <p className="text-sm text-foreground">{order.notes}</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+        </div>
+      </main>
+    </div>
+  );
+};
+
+export default OrderDetail;

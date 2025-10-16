@@ -12,7 +12,9 @@ import {
   ClipboardList,
   PackageCheck,
   Route,
-  TrendingUp
+  TrendingUp,
+  ShoppingCart,
+  FileText
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -36,6 +38,13 @@ const navigationItems = [
       // { title: 'Receiving', href: '/inventory/receiving', icon: PackageCheck },
       // { title: 'Quality Check', href: '/inventory/quality', icon: PackageCheck },
       // { title: 'Quick Actions', href: '/inventory/quick-actions', icon: Package }
+    ]
+  },
+  {
+    title: 'Order Management',
+    icon: ShoppingCart,
+    items: [
+      { title: 'Orders Details', href: '/order-management/orders', icon: FileText }
     ]
   },
   {

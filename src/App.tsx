@@ -23,6 +23,8 @@ import { PerformanceAnalytics } from '@/components/logistics/PerformanceAnalytic
 import { InventoryAnalytics } from '@/components/warehouse/InventoryAnalytics';
 import { QualityMetrics } from '@/components/warehouse/QualityMetrics';
 import { StaffManagement } from '@/components/warehouse/StaffManagement';
+import OrdersList from '@/components/order-management/OrdersList';
+import OrderDetail from '@/components/order-management/OrderDetail';
 
 // Create a query client
 const queryClient = new QueryClient({
@@ -61,6 +63,10 @@ function App() {
                   <Route path="/inventory/quality" element={<QualityCheck />} />
                   <Route path="/inventory/categories" element={<ProductCategoryManagement />} />
                   <Route path="/inventory/quick-actions" element={<QuickActions />} />
+                  
+                  {/* Order Management */}
+                  <Route path="/order-management/orders" element={<OrdersList />} />
+                  <Route path="/order-management/orders/:id" element={<OrderDetail />} />
                   
                   {/* Delivery Management */}
                   <Route path="/delivery/orders" element={<OrderDelivery />} />
