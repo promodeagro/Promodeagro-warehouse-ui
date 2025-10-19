@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { useCategories } from "@/contexts/CategoryContext";
+import { useProducts } from "@/contexts/ProductContext";
 
 // Product Image Carousel Component
 function ProductImageCarousel({ images, productId }: { images: string[], productId: string }) {
@@ -77,6 +78,7 @@ function ProductImageCarousel({ images, productId }: { images: string[], product
 
 export function ProductManagement() {
   const { categories: contextCategories, getSubcategoriesByCategoryId } = useCategories();
+  const { products, addProduct, updateProduct, deleteProduct } = useProducts();
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -84,13 +86,13 @@ export function ProductManagement() {
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [viewingProduct, setViewingProduct] = useState<any>(null);
 
-  // Formats product name into up to two segments of 36 characters each
+  // Formats product name into up to two segments: 30 characters first line, 20 characters second line
   const splitProductName = (name: string): { first: string; second: string; ellipsis: boolean } => {
     if (!name) return { first: "", second: "", ellipsis: false };
-    const first = name.slice(0, 36);
-    const remainder = name.slice(36);
-    const second = remainder.slice(0, 36);
-    return { first, second, ellipsis: remainder.length > 36 };
+    const first = name.slice(0, 30);
+    const remainder = name.slice(30);
+    const second = remainder.slice(0, 20);
+    return { first, second, ellipsis: remainder.length > 20 };
   };
 
   // Reset form function to clear all data when dialog closes
@@ -129,128 +131,6 @@ export function ProductManagement() {
   const [showVariants, setShowVariants] = useState(false);
   const { toast } = useToast();
 
-  const [products, setProducts] = useState([
-    {
-      id: "PRD-001",
-      name: "Fresh Tomatoes",
-      category: "Root Vegetables",
-      subcategory: "Tomatoes",
-      price: 45,
-      unit: "kg",
-      stock: 450,
-      minStock: 50,
-      maxStock: 1000,
-      status: "active",
-      quality: "excellent",
-      supplier: "Green Farm Co.",
-      description: "Fresh, locally sourced tomatoes",
-      image: "/api/placeholder/100/100",
-      lastUpdated: "2024-01-15",
-      onB2C: true,
-      images: [
-        "https://images.unsplash.com/photo-1592924357228-91b4e2a8af0c?w=300&h=200&fit=crop",
-        "https://images.unsplash.com/photo-1546470427-5a3b4b4b4b4b?w=300&h=200&fit=crop",
-        "https://images.unsplash.com/photo-1518977676601-b53f82aba655?w=300&h=200&fit=crop",
-        "https://images.unsplash.com/photo-1567306301408-9b74779a11af?w=300&h=200&fit=crop"
-      ]
-    },
-    {
-      id: "PRD-002",
-      name: "Organic Spinach",
-      category: "Leafy Greens",
-      subcategory: "Spinach",
-      price: 35,
-      unit: "bunch",
-      stock: 23,
-      minStock: 20,
-      maxStock: 200,
-      status: "low-stock",
-      quality: "very-good",
-      supplier: "Organic Valley",
-      description: "Pesticide-free organic spinach",
-      image: "/api/placeholder/100/100",
-      lastUpdated: "2024-01-14",
-      onB2C: true,
-      images: [
-        "https://images.unsplash.com/photo-1576045057995-568f588f82fb?w=300&h=200&fit=crop",
-        "https://images.unsplash.com/photo-1586201375761-83865001e31c?w=300&h=200&fit=crop",
-        "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=300&h=200&fit=crop",
-        "https://images.unsplash.com/photo-1594736797933-d0401ba2fe65?w=300&h=200&fit=crop"
-      ]
-    },
-    {
-      id: "PRD-003",
-      name: "Red Onions",
-      category: "Root Vegetables",
-      subcategory: "Onions",
-      price: 30,
-      unit: "kg",
-      stock: 0,
-      minStock: 100,
-      maxStock: 800,  
-      status: "out-of-stock",
-      quality: "good",
-      supplier: "Local Co-op",
-      description: "Premium quality red onions",
-      image: "/api/placeholder/100/100",
-      lastUpdated: "2024-01-13",
-      onB2C: false,
-      images: [
-        "https://images.unsplash.com/photo-1518977956812-cd3dbadaaf31?w=300&h=200&fit=crop",
-        "https://images.unsplash.com/photo-1615485925446-2c0b2b2b2b2b?w=300&h=200&fit=crop",
-        "https://images.unsplash.com/photo-1604503468506-a8da13d82791?w=300&h=200&fit=crop",
-        "https://images.unsplash.com/photo-1615485925446-2c0b2b2b2b2b?w=300&h=200&fit=crop"
-      ]
-    },
-    {
-      id: "PRD-004",
-      name: "Fresh Bananas",
-      category: "Fruits",
-      subcategory: "Bananas",
-      price: 60,
-      unit: "dozen",
-      stock: 234,
-      minStock: 50,
-      maxStock: 500,
-      status: "active",
-      quality: "excellent",
-      supplier: "South India Fruits",
-      description: "Sweet, ripe bananas from South India",
-      image: "/api/placeholder/100/100",
-      lastUpdated: "2024-01-15",
-      onB2C: true,
-      images: [
-        "https://images.unsplash.com/photo-1571771894821-ce9b6c11b08e?w=300&h=200&fit=crop",
-        "https://images.unsplash.com/photo-1587132137056-bfbf0166836e?w=300&h=200&fit=crop",
-        "https://images.unsplash.com/photo-1603833665858-e61d17a86224?w=300&h=200&fit=crop",
-        "https://images.unsplash.com/photo-1619546813926-a3af8267b198?w=300&h=200&fit=crop"
-      ]
-    },
-    {
-      id: "PRD-005",
-      name: "Coriander Leaves",
-      category: "Herbs & Spices",
-      subcategory: "Coriander",
-      price: 15,
-      unit: "bunch",
-      stock: 89,
-      minStock: 30,
-      maxStock: 150,
-      status: "active",
-      quality: "very-good",
-      supplier: "Herb Gardens",
-      description: "Fresh aromatic coriander leaves",
-      image: "/api/placeholder/100/100",
-      lastUpdated: "2024-01-14",
-      onB2C: true,
-      images: [
-        "https://images.unsplash.com/photo-1615485925446-2c0b2b2b2b2b?w=300&h=200&fit=crop",
-        "https://images.unsplash.com/photo-1615485925446-2c0b2b2b2b2b?w=300&h=200&fit=crop",
-        "https://images.unsplash.com/photo-1615485925446-2c0b2b2b2b2b?w=300&h=200&fit=crop",
-        "https://images.unsplash.com/photo-1615485925446-2c0b2b2b2b2b?w=300&h=200&fit=crop"
-      ]
-    }
-  ]);
 
   const [newProduct, setNewProduct] = useState({
     name: "",
@@ -519,15 +399,15 @@ export function ProductManagement() {
         b2cUnit: variant.b2cUnit || "kg",
         minStock: parseInt(variant.lowStockAlert || "0"),
         maxStock: 1000,
-        status: parseInt(variant.qty || "0") === 0 ? "out-of-stock" :
-                parseInt(variant.qty || "0") <= parseInt(variant.lowStockAlert || "0") ? "low-stock" : "active",
+        status: (parseInt(variant.qty || "0") === 0 ? "out-of-stock" :
+                parseInt(variant.qty || "0") <= parseInt(variant.lowStockAlert || "0") ? "low-stock" : "active") as "active" | "low-stock" | "out-of-stock",
         images: variant.images.map(img => img.url),
         unit: variant.unit || "kg",
         supplier: newProduct.supplier,
         description: newProduct.description || "",
-        purchasePrice: variant.purchasePrice || "0",
-        salePrice: variant.salePrice || "0",
-        comparePrice: variant.comparePrice || "0",
+        purchasePrice: parseFloat(variant.purchasePrice || "0"),
+        salePrice: parseFloat(variant.salePrice || "0"),
+        comparePrice: parseFloat(variant.comparePrice || "0"),
         expiryDate: variant.expiryDate || "",
         onB2C: variant.publishToB2C,
         isVariant: true,
@@ -535,9 +415,13 @@ export function ProductManagement() {
         lastUpdated: new Date().toISOString().split('T')[0]
       }));
 
-      // Remove old variants for this parent and replace with updated ones
-      const otherProducts = products.filter(p => (p as any).parentProductId !== editingProduct.id && p.id !== editingProduct.id);
-      setProducts([updatedProduct, ...updatedVariants, ...otherProducts]);
+      // Update product using shared context
+      updateProduct(editingProduct.id, updatedProduct);
+      
+      // Add/update variants using shared context
+      updatedVariants.forEach(variant => {
+        updateProduct(variant.id, variant);
+      });
 
       toast({
         title: "Product Updated Successfully",
@@ -593,8 +477,8 @@ export function ProductManagement() {
           b2cUnit: variant.b2cUnit || "kg",
           minStock: parseInt(variant.lowStockAlert || "0"),
           maxStock: 1000,
-          status: parseInt(variant.qty || "0") === 0 ? "out-of-stock" : 
-                  parseInt(variant.qty || "0") <= parseInt(variant.lowStockAlert || "0") ? "low-stock" : "active",
+          status: (parseInt(variant.qty || "0") === 0 ? "out-of-stock" : 
+                  parseInt(variant.qty || "0") <= parseInt(variant.lowStockAlert || "0") ? "low-stock" : "active") as "active" | "low-stock" | "out-of-stock",
           quality: "good",
           image: "/api/placeholder/100/100",
           lastUpdated: new Date().toISOString().split('T')[0],
@@ -602,9 +486,9 @@ export function ProductManagement() {
           unit: variant.unit || "kg",
           supplier: newProduct.supplier || "Local Supplier",
           description: newProduct.description || "",
-          purchasePrice: variant.purchasePrice || "0",
-          salePrice: variant.salePrice || "0",
-          comparePrice: variant.comparePrice || "0",
+          purchasePrice: parseFloat(variant.purchasePrice || "0"),
+          salePrice: parseFloat(variant.salePrice || "0"),
+          comparePrice: parseFloat(variant.comparePrice || "0"),
           expiryDate: variant.expiryDate || "",
           onB2C: variant.publishToB2C,
           isVariant: true,
@@ -614,7 +498,10 @@ export function ProductManagement() {
         newProducts.push(variantProduct);
       });
 
-      setProducts([...products, ...newProducts]);
+      // Add new products using shared context
+      newProducts.forEach(product => {
+        addProduct(product);
+      });
     
     toast({
       title: "Product Added Successfully",
@@ -629,17 +516,12 @@ export function ProductManagement() {
   };
 
   const handleUpdateProduct = (productId: string, updates: any) => {
-    setProducts(products.map(product => 
-      product.id === productId 
-        ? { 
-            ...product, 
+    updateProduct(productId, {
             ...updates, 
             lastUpdated: new Date().toISOString().split('T')[0],
             status: updates.stock === 0 ? "out-of-stock" : 
-                   updates.stock <= product.minStock ? "low-stock" : "active"
-          }
-        : product
-    ));
+             updates.stock <= (updates.minStock || products.find(p => p.id === productId)?.minStock || 0) ? "low-stock" : "active"
+    });
     
     toast({
       title: "Product Updated",
@@ -648,7 +530,7 @@ export function ProductManagement() {
   };
 
   const handleDeleteProduct = (productId: string) => {
-    setProducts(products.filter(product => product.id !== productId));
+    deleteProduct(productId);
     toast({
       title: "Product Deleted",
       description: "Product has been removed from inventory and B2C portal.",
@@ -656,7 +538,7 @@ export function ProductManagement() {
   };
 
   const toggleB2CStatus = (productId: string, currentStatus: boolean) => {
-    handleUpdateProduct(productId, { onB2C: !currentStatus });
+    updateProduct(productId, { onB2C: !currentStatus });
     toast({
       title: currentStatus ? "Product Hidden from B2C" : "Product Published to B2C",
       description: currentStatus ? 
@@ -1403,7 +1285,7 @@ export function ProductManagement() {
           </div>
 
           {/* Quick Stats (reference-style cards, using existing design tokens) */}
-          <div className="grid gap-4 md:grid-cols-4 mb-6">
+          <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-4 mb-4 sm:mb-6">
             <Card className="bg-card border border-card-border hover-scale transition-smooth">
               <CardContent className="p-5">
                 <div className="flex items-center justify-between">
@@ -1462,19 +1344,19 @@ export function ProductManagement() {
           </div>
 
           {/* Products Grid */}
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
             {filteredProducts.map((product) => (
               <Card key={product.id} className="hover:shadow-md transition-all">
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between mb-3">
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
                       <ProductImageCarousel images={product.images || []} productId={product.id} />
-                      <div className="flex-1">
+                      <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
                           <Badge variant="outline" className="text-xs">
                           {product.id}
                         </Badge>
-                        </div>
+                      </div>
                         {(() => {
                           const { first, second, ellipsis } = splitProductName(product.name);
                           return (
@@ -1486,9 +1368,9 @@ export function ProductManagement() {
                             </h4>
                           );
                         })()}
-                      </div>
                     </div>
-                    <div className="flex items-center gap-1">
+                    </div>
+                    <div className="flex items-center gap-1 flex-shrink-0 ml-2">
                       <Switch
                         checked={product.onB2C}
                         onCheckedChange={() => toggleB2CStatus(product.id, product.onB2C)}

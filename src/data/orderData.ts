@@ -77,9 +77,9 @@ export const orders: Order[] = [
       { id: 'OI003', product_id: 'P007', product_name: 'Fresh Spinach', quantity: 3, price: 25, subtotal: 75, is_substituted: false },
       { id: 'OI004', product_id: 'P006', product_name: 'Orange Carrots', quantity: 2, price: 40, subtotal: 80, is_substituted: false },
     ],
-    created_at: '2025-01-10T08:30:00Z',
+    created_at: new Date().toISOString(),
     updated_at: '2025-01-10T09:15:00Z',
-    delivery_slot: '11:00 AM - 1:00 PM',
+    delivery_slot: 'afternoon',
     notes: 'Please call before delivery'
   },
   {
@@ -100,7 +100,7 @@ export const orders: Order[] = [
       { id: 'OI006', product_id: 'P003', product_name: 'Red Onions', quantity: 3, price: 35, subtotal: 105, is_substituted: false },
       { id: 'OI007', product_id: 'P005', product_name: 'Farm Bananas', quantity: 1, price: 50, subtotal: 50, is_substituted: false },
     ],
-    created_at: '2025-01-10T08:45:00Z',
+    created_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), // Yesterday
     updated_at: '2025-01-10T10:00:00Z',
     delivery_slot: '11:00 AM - 1:00 PM'
   },
@@ -121,9 +121,9 @@ export const orders: Order[] = [
       { id: 'OI008', product_id: 'P008', product_name: 'Alphonso Mangoes', quantity: 3, price: 180, subtotal: 540, is_substituted: false },
       { id: 'OI009', product_id: 'P007', product_name: 'Fresh Spinach', quantity: 2, price: 25, subtotal: 50, is_substituted: false },
     ],
-    created_at: '2025-01-10T09:00:00Z',
+    created_at: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days ago
     updated_at: '2025-01-10T09:00:00Z',
-    delivery_slot: '2:00 PM - 4:00 PM'
+    delivery_slot: 'morning'
   },
   {
     id: 'ORD004',
@@ -143,7 +143,7 @@ export const orders: Order[] = [
       { id: 'OI011', product_id: 'P004', product_name: 'Shimla Apples', quantity: 2, price: 120, subtotal: 240, is_substituted: false },
       { id: 'OI012', product_id: 'P002', product_name: 'Fresh Potatoes', quantity: 1, price: 30, subtotal: 30, is_substituted: false },
     ],
-    created_at: '2025-01-10T07:30:00Z',
+    created_at: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days ago
     updated_at: '2025-01-10T12:30:00Z',
     delivery_slot: '11:00 AM - 1:00 PM'
   },
@@ -159,15 +159,15 @@ export const orders: Order[] = [
     zone: 'Zone A',
     total_amount: 265,
     payment_mode: 'Online',
-    status: 'Accepted',
+    status: 'Failed',
     items: [
       { id: 'OI013', product_id: 'P005', product_name: 'Farm Bananas', quantity: 2, price: 50, subtotal: 100, is_substituted: false },
       { id: 'OI014', product_id: 'P003', product_name: 'Red Onions', quantity: 3, price: 35, subtotal: 105, is_substituted: false },
       { id: 'OI015', product_id: 'P006', product_name: 'Orange Carrots', quantity: 1, price: 40, subtotal: 40, is_substituted: false },
     ],
-    created_at: '2025-01-10T09:30:00Z',
+    created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 days ago
     updated_at: '2025-01-10T09:45:00Z',
-    delivery_slot: '2:00 PM - 4:00 PM'
+    delivery_slot: 'evening'
   }
 ];
 

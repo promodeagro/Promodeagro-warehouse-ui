@@ -2,6 +2,7 @@ import { Thermometer, Package, TrendingUp, Clock, Users, Truck } from "lucide-re
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { OrderNotificationDemo } from "@/components/OrderNotificationDemo";
 
 export function OperationsOverview() {
   const storageUnits = [
@@ -95,7 +96,7 @@ export function OperationsOverview() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
             {storageUnits.map((unit, index) => (
               <div key={index} className="p-4 rounded-lg border bg-card/50">
                 <div className="flex items-center justify-between mb-3">
@@ -213,7 +214,7 @@ export function OperationsOverview() {
           <CardDescription>Today's warehouse performance metrics</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-6 md:grid-cols-3">
+          <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
             <div className="text-center space-y-2">
               <div className="text-3xl font-bold text-gradient-primary">98.5%</div>
               <p className="text-sm font-medium">Order Accuracy</p>
@@ -234,6 +235,11 @@ export function OperationsOverview() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Order Notification Demo */}
+      <div className="mt-8">
+        <OrderNotificationDemo />
+      </div>
     </div>
   );
 }

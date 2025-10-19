@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { NotificationBell } from '@/contexts/NotificationContext';
 import { ThemeToggle } from '@/components/theme-toggle';
 
 const navigationItems = [
@@ -167,15 +168,23 @@ export function Navigation() {
 
   return (
     <>
+      {/* Top Header with Notifications */}
+      <div className="fixed top-0 right-0 z-50 p-2 sm:p-4">
+        <div className="flex items-center gap-1 sm:gap-2">
+          <NotificationBell />
+          <ThemeToggle />
+        </div>
+      </div>
+
       {/* Mobile Navigation */}
       <div className="lg:hidden">
         <Sheet open={isOpen} onOpenChange={setIsOpen}>
           <SheetTrigger asChild>
-            <Button variant="ghost" size="icon" className="fixed top-4 left-4 z-50">
-              <Menu className="h-6 w-6" />
+            <Button variant="ghost" size="icon" className="fixed top-2 left-2 sm:top-4 sm:left-4 z-50">
+              <Menu className="h-5 w-5 sm:h-6 sm:w-6" />
             </Button>
           </SheetTrigger>
-          <SheetContent side="left" className="w-80 p-0">
+          <SheetContent side="left" className="w-72 sm:w-80 p-0">
             <NavContent />
           </SheetContent>
         </Sheet>

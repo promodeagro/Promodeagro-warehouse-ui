@@ -1,7 +1,9 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/StatusBadge";
-import { orders, riders } from "@/data/orderData";
-import { ArrowLeft, Phone, MapPin, Clock, CreditCard, Package, User, Trash2, Plus, Printer, X, RotateCcw, Calendar } from "lucide-react";
+import { riders } from "@/data/orderData";
+import { useProducts } from "@/contexts/ProductContext";
+import { useOrders } from "@/contexts/OrderContext";
+import { ArrowLeft, Phone, MapPin, Clock, CreditCard, Package, User, Trash2, Plus, Printer, X, RotateCcw, Calendar, Search } from "lucide-react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -12,12 +14,19 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 
 const OrderDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const order = orders.find(o => o.id === id);
+  const { orders } = useOrders();
+  const order = orders?.find(o => o.id === id);
+  const { products, searchProducts: searchProductsContext } = useProducts();
+
+  // Add loading state while orders are being fetched
+  if (!orders) {
+    return <div>Loading...</div>;
+  }
   const [orderItems, setOrderItems] = useState(order?.items || []);
   const [removedItems, setRemovedItems] = useState<typeof order.items>([]);
   const [showAddItemDialog, setShowAddItemDialog] = useState(false);
@@ -27,8 +36,13 @@ const OrderDetail = () => {
   const [orderStatus, setOrderStatus] = useState(order?.status || 'Placed');
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
+  
+  // Search and filter states
+  const [searchTerm, setSearchTerm] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
 
-  if (!order) {
+  if (!orders || !order) {
     return <div>Order not found</div>;
   }
 
@@ -42,7 +56,7 @@ const OrderDetail = () => {
 
   const handleToggleProduct = (productId: string, checked: boolean) => {
     if (checked) {
-      setSelectedProducts({...selectedProducts, [productId]: 1});
+      setSelectedProducts({...selectedProducts, [productId]: 0});
     } else {
       const newSelected = {...selectedProducts};
       delete newSelected[productId];
@@ -54,21 +68,33 @@ const OrderDetail = () => {
     setSelectedProducts({...selectedProducts, [productId]: quantity});
   };
 
+  // Text truncation functions for table columns
+  const splitItemName = (name: string): { first: string; second: string; ellipsis: boolean } => {
+    if (!name) return { first: "", second: "", ellipsis: false };
+    const first = name.slice(0, 20);
+    const remainder = name.slice(20);
+    const second = remainder.slice(0, 17);
+    return { first, second, ellipsis: remainder.length > 17 };
+  };
+
+  const splitCategoryText = (text: string): { first: string; second: string; ellipsis: boolean } => {
+    if (!text) return { first: "", second: "", ellipsis: false };
+    const first = text.slice(0, 15);
+    const remainder = text.slice(15);
+    const second = remainder.slice(0, 12);
+    return { first, second, ellipsis: remainder.length > 12 };
+  };
+
+  // Filtered products - show all products as individual items (synced with inventory)
+  const filteredProducts = useMemo(() => {
+    return searchProductsContext(searchTerm, categoryFilter, statusFilter);
+  }, [searchProductsContext, searchTerm, categoryFilter, statusFilter]);
+
   const handleAddItems = () => {
-    const newItems = Object.entries(selectedProducts).map(([productId, quantity]) => {
-      // Mock product data - in real app, this would come from API
-      const mockProducts = [
-        { id: 'P001', name: 'Organic Tomatoes', price: 45, unit: 'kg' },
-        { id: 'P002', name: 'Fresh Potatoes', price: 30, unit: 'kg' },
-        { id: 'P003', name: 'Red Onions', price: 35, unit: 'kg' },
-        { id: 'P004', name: 'Shimla Apples', price: 120, unit: 'kg' },
-        { id: 'P005', name: 'Farm Bananas', price: 50, unit: 'dozen' },
-        { id: 'P006', name: 'Orange Carrots', price: 40, unit: 'kg' },
-        { id: 'P007', name: 'Fresh Spinach', price: 25, unit: 'bundle' },
-        { id: 'P008', name: 'Alphonso Mangoes', price: 180, unit: 'kg' },
-      ];
-      
-      const product = mockProducts.find(p => p.id === productId);
+    const newItems = Object.entries(selectedProducts)
+      .filter(([, quantity]) => quantity > 0)
+      .map(([productId, quantity]) => {
+      const product = products.find(p => p.id === productId);
       if (product) {
         return {
           id: `OI${Date.now()}_${productId}`,
@@ -86,6 +112,9 @@ const OrderDetail = () => {
     setOrderItems([...orderItems, ...newItems as any]);
     setShowAddItemDialog(false);
     setSelectedProducts({});
+    setSearchTerm("");
+    setCategoryFilter("all");
+    setStatusFilter("all");
   };
 
   const handleRestoreItem = (itemId: string) => {
@@ -180,45 +209,45 @@ const OrderDetail = () => {
             {/* Action buttons moved to header right */}
             <div className="flex items-center gap-5">
               <Dialog open={showCancelDialog} onOpenChange={(open) => { setShowCancelDialog(open); if (!open) setCancelReason(''); }}>
-                <DialogTrigger asChild>
-                  {orderStatus === 'Cancelled' ? (
+              <DialogTrigger asChild>
+                {orderStatus === 'Cancelled' ? (
                     <Button variant="outline" className="hover:bg-success/10" onClick={() => setShowCancelDialog(true)}>
-                      <RotateCcw className="h-4 w-4 mr-2" />
-                      Re Attempt
-                    </Button>
-                  ) : (
+                    <RotateCcw className="h-4 w-4 mr-2" />
+                    Re Attempt
+                  </Button>
+                ) : (
                     <Button variant="outline" className="text-red-800 border-red-800 border-[1.5px] font-semibold hover:bg-transparent hover:text-red-800">
-                      Cancel Order
-                    </Button>
-                  )}
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>
-                      {orderStatus === 'Cancelled' ? 'Confirm Action' : 'Order Cancel Reason'}
-                    </DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-4">
-                    {orderStatus === 'Cancelled' ? (
-                      <>
-                        <p className="text-center text-muted-foreground">
-                          Are you sure you want to Reattempt This Order?
-                        </p>
-                        <div className="flex gap-3 justify-end">
-                          <Button variant="outline" onClick={() => setShowCancelDialog(false)}>
-                            Cancel
-                          </Button>
-                          <Button onClick={handleReAttempt} className="bg-success hover:bg-success/90">
-                            Confirm
-                          </Button>
-                        </div>
-                      </>
-                    ) : (
-                      <>
-                        <div className="space-y-2 border-b pb-4">
-                          <p className="text-sm font-medium text-primary">Order ID: {order.order_number}</p>
-                          <div className="flex items-center gap-2">
-                            <p className="font-semibold">{order.customer_name}</p>
+                    Cancel Order
+                  </Button>
+                )}
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>
+                    {orderStatus === 'Cancelled' ? 'Confirm Action' : 'Order Cancel Reason'}
+                  </DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  {orderStatus === 'Cancelled' ? (
+                    <>
+                      <p className="text-center text-muted-foreground">
+                        Are you sure you want to Reattempt This Order?
+                      </p>
+                      <div className="flex gap-3 justify-end">
+                        <Button variant="outline" onClick={() => setShowCancelDialog(false)}>
+                          Cancel
+                        </Button>
+                        <Button onClick={handleReAttempt} className="bg-success hover:bg-success/90">
+                          Confirm
+                        </Button>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="space-y-2 border-b pb-4">
+                        <p className="text-sm font-medium text-primary">Order ID: {order.order_number}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="font-semibold">{order.customer_name}</p>
                             <span
                               className={`inline-flex items-center justify-center rounded-full px-3 h-6 text-xs font-medium leading-none ${
                                 order.payment_mode === 'Online'
@@ -226,54 +255,54 @@ const OrderDetail = () => {
                                   : 'bg-[#000000] text-white'
                               }`}
                             >
-                              {order.payment_mode === 'Online' ? 'Prepaid' : 'COD'}
+                            {order.payment_mode === 'Online' ? 'Prepaid' : 'COD'}
                             </span>
-                          </div>
-                          <p className="text-sm text-muted-foreground">{order.address}</p>
-                          <p className="text-sm text-muted-foreground">{order.customer_phone}</p>
                         </div>
-                        <div className="flex justify-between items-center border-b pb-4">
-                          <p className="font-medium">Payment: <span className="text-primary">₹{order.total_amount}</span></p>
-                          <p className="text-sm text-muted-foreground">{order.items.length} Items</p>
-                        </div>
-                        <div>
-                          <label className="text-sm font-medium mb-2 block">Reason</label>
-                          <Textarea
-                            placeholder="Enter cancellation reason"
-                            value={cancelReason}
-                            onChange={(e) => setCancelReason(e.target.value)}
-                            className="min-h-[100px]"
-                          />
-                        </div>
-                        <div className="flex justify-end">
-                          <Button 
-                            variant="destructive"
-                            onClick={handleCancelOrder}
-                            disabled={!cancelReason.trim()}
-                          >
-                            Confirm Cancel
-                          </Button>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                </DialogContent>
-              </Dialog>
-              <Button 
+                        <p className="text-sm text-muted-foreground">{order.address}</p>
+                        <p className="text-sm text-muted-foreground">{order.customer_phone}</p>
+                      </div>
+                      <div className="flex justify-between items-center border-b pb-4">
+                        <p className="font-medium">Payment: <span className="text-primary">₹{order.total_amount}</span></p>
+                        <p className="text-sm text-muted-foreground">{order.items.length} Items</p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium mb-2 block">Reason</label>
+                        <Textarea
+                          placeholder="Enter cancellation reason"
+                          value={cancelReason}
+                          onChange={(e) => setCancelReason(e.target.value)}
+                          className="min-h-[100px]"
+                        />
+                      </div>
+                      <div className="flex justify-end">
+                        <Button 
+                          variant="destructive"
+                          onClick={handleCancelOrder}
+                          disabled={!cancelReason.trim()}
+                        >
+                          Confirm Cancel
+                        </Button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </DialogContent>
+            </Dialog>
+            <Button 
                 variant="default"
-                onClick={handlePrintBill}
-              >
-                <Printer className="h-4 w-4 mr-2" />
-                Print Bill
-              </Button>
-            </div>
+              onClick={handlePrintBill}
+            >
+              <Printer className="h-4 w-4 mr-2" />
+              Print Bill
+            </Button>
+          </div>
           </div>
         </div>
       </header>
 
       <main className="container mx-auto px-6 py-8">
-        <div className="max-w-[1200px] mx-auto space-y-6">
-        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_auto] gap-7">
+        <div className="max-w-[1200px] mx-auto space-y-4 sm:space-y-6">
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_auto] gap-4 sm:gap-6 lg:gap-7">
           <div className="space-y-6">
             <Card className="w-full">
               <CardHeader className="flex flex-row items-center justify-between">
@@ -288,56 +317,157 @@ const OrderDetail = () => {
                       Add Items
                     </Button>
                   </DialogTrigger>
-                  <DialogContent className="max-w-4xl h-[calc(80vh+30px)]">
-                    <DialogHeader>
-                      <DialogTitle>Add Items</DialogTitle>
+                  <DialogContent className="max-w-6xl h-[calc(80vh+50px)] flex flex-col w-[95vw] sm:w-full">
+                    <DialogHeader className="flex-shrink-0">
+                      <DialogTitle>Add Items - Sync with Inventory</DialogTitle>
                     </DialogHeader>
-                    <div className="space-y-4">
-                      <Input placeholder="Search items..." className="w-full" />
-                      <div className="border rounded-lg overflow-hidden max-h-[calc(56vh+0px)] overflow-y-auto">
-                        <Table>
-                          <TableHeader>
+                    
+                    {/* Fixed Search and Filters Section */}
+                    <div className="flex-shrink-0 mb-1">
+                      <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
+                        <div className="relative flex-1">
+                          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                          <Input 
+                            placeholder="Search by name, ID, category, or tags..." 
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="pl-10" 
+                          />
+                        </div>
+                        <div className="flex gap-2 sm:gap-4">
+                          <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                            <SelectTrigger className="w-full sm:w-48">
+                              <SelectValue placeholder="All Categories" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="all">All Categories</SelectItem>
+                              {Array.from(new Set(products.map(p => p.category))).map(category => (
+                                <SelectItem key={category} value={category}>{category}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <Select value={statusFilter} onValueChange={setStatusFilter}>
+                            <SelectTrigger className="w-full sm:w-32">
+                              <SelectValue placeholder="All Status" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="all">All Status</SelectItem>
+                              <SelectItem value="active">Active</SelectItem>
+                              <SelectItem value="low-stock">Low Stock</SelectItem>
+                              <SelectItem value="out-of-stock">Out of Stock</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    </div>
+                    
+         {/* Flexible Table Section - Grows upward from bottom */}
+         <div className="flex-1 min-h-0 flex flex-col">
+           <div className="border rounded-lg overflow-hidden flex-1 overflow-y-auto py-1">
+                        <div className="overflow-x-auto">
+                          <Table className="min-w-full">
+                            <TableHeader className="sticky top-0 bg-background z-10">
                             <TableRow>
                               <TableHead className="w-12"></TableHead>
+                                <TableHead className="hidden sm:table-cell">Item ID</TableHead>
                               <TableHead>Item Name</TableHead>
-                              <TableHead>Category</TableHead>
-                              <TableHead>Sub Category</TableHead>
-                              <TableHead>Unit</TableHead>
-                              <TableHead>Selling Price</TableHead>
-                              <TableHead className="w-32">Quantity</TableHead>
+                                <TableHead className="hidden md:table-cell">Category</TableHead>
+                                <TableHead className="hidden lg:table-cell">Sub Category</TableHead>
+                                <TableHead className="hidden sm:table-cell">Unit</TableHead>
+                                <TableHead className="hidden md:table-cell">Stock</TableHead>
+                                <TableHead className="hidden sm:table-cell">Price</TableHead>
+                                <TableHead className="w-20 sm:w-32">Qty</TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>
-                            {[
-                              { id: 'P001', name: 'Organic Tomatoes', category: 'Vegetables', subCategory: 'Fresh Vegetables', unit: 'kg', price: 45 },
-                              { id: 'P002', name: 'Fresh Potatoes', category: 'Vegetables', subCategory: 'Fresh Vegetables', unit: 'kg', price: 30 },
-                              { id: 'P003', name: 'Red Onions', category: 'Vegetables', subCategory: 'Fresh Vegetables', unit: 'kg', price: 35 },
-                              { id: 'P004', name: 'Shimla Apples', category: 'Fruits', subCategory: 'Fresh Fruits', unit: 'kg', price: 120 },
-                              { id: 'P005', name: 'Farm Bananas', category: 'Fruits', subCategory: 'Fresh Fruits', unit: 'dozen', price: 50 },
-                              { id: 'P006', name: 'Orange Carrots', category: 'Vegetables', subCategory: 'Fresh Vegetables', unit: 'kg', price: 40 },
-                              { id: 'P007', name: 'Fresh Spinach', category: 'Greens', subCategory: 'Leafy Greens', unit: 'bundle', price: 25 },
-                              { id: 'P008', name: 'Alphonso Mangoes', category: 'Fruits', subCategory: 'Fresh Fruits', unit: 'kg', price: 180 },
-                            ].map((product) => (
-                              <TableRow key={product.id}>
+                              {filteredProducts.map((product) => (
+                                <TableRow 
+                                  key={product.id}
+                                  className={`${selectedProducts[product.id] !== undefined ? 'bg-primary/5 border-primary/20' : 'hover:bg-muted/50'} transition-colors`}
+                                >
                                 <TableCell>
                                   <Checkbox
-                                    checked={!!selectedProducts[product.id]}
+                                      checked={selectedProducts[product.id] !== undefined}
                                     onCheckedChange={(checked) => handleToggleProduct(product.id, checked as boolean)}
                                   />
                                 </TableCell>
-                                <TableCell className="font-medium">{product.name}</TableCell>
-                                <TableCell>{product.category}</TableCell>
-                                <TableCell>{product.subCategory}</TableCell>
-                                <TableCell>{product.unit}</TableCell>
-                                <TableCell>₹{product.price}</TableCell>
+                                  <TableCell className="hidden sm:table-cell font-mono text-sm text-muted-foreground">
+                                    {product.id}
+                                  </TableCell>
+                       <TableCell className="font-medium">
+                         <div className="space-y-1">
+                           <div className="leading-tight">
+                             {(() => {
+                               const displayName = product.isVariant && product.parentProductId ? 
+                                 // For variants, extract the base product name (remove size indicators)
+                                 product.name
+                                   .replace(/\s*-\s*(Large|Small|Medium|Extra Large|XL|L|M|S|XS)\s*$/i, '')
+                                   .replace(/\s*\([^)]*\)\s*$/, '') // Remove any parenthetical info
+                                   .trim() : 
+                                 product.name;
+                               
+                               const { first, second, ellipsis } = splitItemName(displayName);
+                               return (
+                                 <>
+                                   <span className="block whitespace-nowrap">{first}</span>
+                                   {second && (
+                                     <span className="block">{ellipsis ? `${second}...` : second}</span>
+                                   )}
+                                 </>
+                               );
+                             })()}
+                           </div>
+                           <div className="sm:hidden text-xs text-muted-foreground">
+                             {product.id} • {product.category}
+                           </div>
+                         </div>
+                       </TableCell>
+                                  <TableCell className="hidden md:table-cell">
+                         {(() => {
+                           const { first, second, ellipsis } = splitCategoryText(product.category);
+                           return (
+                             <div className="leading-tight">
+                               <span className="block whitespace-nowrap">{first}</span>
+                               {second && (
+                                 <span className="block">{ellipsis ? `${second}...` : second}</span>
+                               )}
+                             </div>
+                           );
+                         })()}
+                       </TableCell>
+                                  <TableCell className="hidden lg:table-cell">
+                         {(() => {
+                           const { first, second, ellipsis } = splitCategoryText(product.subcategory);
+                           return (
+                             <div className="leading-tight">
+                               <span className="block whitespace-nowrap">{first}</span>
+                               {second && (
+                                 <span className="block">{ellipsis ? `${second}...` : second}</span>
+                               )}
+                             </div>
+                           );
+                         })()}
+                       </TableCell>
+                                  <TableCell className="hidden sm:table-cell">{product.unit}</TableCell>
+                                  <TableCell className="hidden md:table-cell">
+                                    <Badge 
+                                      variant={product.status === 'active' ? 'default' : product.status === 'low-stock' ? 'secondary' : 'destructive'}
+                                    >
+                                      {product.stock} {product.unit}
+                                    </Badge>
+                                  </TableCell>
+                                  <TableCell className="hidden sm:table-cell">₹{product.price}</TableCell>
                                 <TableCell>
-                                  {selectedProducts[product.id] && (
+                                    {selectedProducts[product.id] !== undefined && (
                                     <Input
-                                      type="number"
-                                      min="1"
-                                      value={selectedProducts[product.id]}
-                                      onChange={(e) => handleQuantityChange(product.id, parseInt(e.target.value) || 1)}
-                                      className="w-20"
+                                        type="text"
+                                        inputMode="numeric"
+                                        pattern="[0-9]*"
+                                        value={selectedProducts[product.id] === 0 ? '' : selectedProducts[product.id]}
+                                        onChange={(e) => handleQuantityChange(product.id, parseInt(e.target.value) || 0)}
+                                        placeholder="0"
+                                        className="w-16 sm:w-20 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield] focus:ring-2 focus:ring-primary focus:border-primary hover:border-primary/50 transition-colors"
+                                        autoFocus
                                     />
                                   )}
                                 </TableCell>
@@ -346,13 +476,23 @@ const OrderDetail = () => {
                           </TableBody>
                         </Table>
                       </div>
-                      <div className="flex justify-between items-center pt-4">
-                        <Button variant="outline" onClick={() => { setShowAddItemDialog(false); setSelectedProducts({}); }}>
+                      </div>
+                    </div>
+                    
+         {/* Fixed Action Buttons Section */}
+         <div className="flex-shrink-0 pt-2">
+                      <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 sm:justify-between sm:items-center">
+                        <Button 
+                          variant="outline" 
+                          onClick={() => { setShowAddItemDialog(false); setSelectedProducts({}); }}
+                          className="w-full sm:w-auto"
+                        >
                           Cancel
                         </Button>
                         <Button 
                           onClick={handleAddItems} 
                           disabled={Object.keys(selectedProducts).length === 0}
+                          className="w-full sm:w-auto"
                         >
                           Done ({Object.keys(selectedProducts).length} items selected)
                         </Button>
@@ -529,15 +669,15 @@ const OrderDetail = () => {
                                 <label className="text-sm text-muted-foreground">Discount</label>
                                 <div className="relative">
                                   <span className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground">₹</span>
-                                  <Input
+                                <Input
                                     type="text"
                                     inputMode="decimal"
                                     pattern="[0-9]*[.]?[0-9]*"
                                     value={String(discountAmount)}
-                                    onChange={(e) => setDiscountAmount(parseFloat(e.target.value) || 0)}
+                                  onChange={(e) => setDiscountAmount(parseFloat(e.target.value) || 0)}
                                     className="pl-6 w-[120px] text-right"
                                     placeholder="0"
-                                  />
+                                />
                                 </div>
                               </div>
                               <div className="h-[0.1px]" />
@@ -603,7 +743,7 @@ const OrderDetail = () => {
             )}
           </div>
 
-          <div className="space-y-8 w-full lg:w-[450px]">
+          <div className="space-y-4 sm:space-y-6 lg:space-y-8 w-full lg:w-[450px]">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle className="flex items-center gap-2">

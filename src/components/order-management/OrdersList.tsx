@@ -1,48 +1,90 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { StatusBadge } from "@/components/StatusBadge";
-import { orders, type OrderStatus, type PaymentMode } from "@/data/orderData";
-import { ArrowLeft, Search, Package, CheckCircle, XCircle, Clock, Calendar, MapPin, User, Phone, Filter, ChevronDown, ChevronUp, IndianRupee, Plus, Printer, CreditCard, CheckCircle2, XCircle as XCircleIcon, Truck, RotateCcw, AlertTriangle } from "lucide-react";
-import { Link } from "react-router-dom";
+import { type OrderStatus, type PaymentMode } from "@/data/orderData";
+import { useOrders } from "@/contexts/OrderContext";
+import { ArrowLeft, Search, Package, CheckCircle, XCircle, Clock, Calendar, MapPin, User, Phone, Filter, ChevronDown, ChevronUp, IndianRupee, Plus, Printer, CreditCard, CheckCircle2, XCircle as XCircleIcon, Truck, RotateCcw, AlertTriangle, Check } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useState, useMemo } from "react";
 
 const OrdersList = () => {
+  const navigate = useNavigate();
+  const { orders, resetOrders } = useOrders();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<OrderStatus | "all">("all");
   const [paymentFilter, setPaymentFilter] = useState<PaymentMode | "all">("all");
-  const [zoneFilter, setZoneFilter] = useState<string>("all");
+  const [paymentStatusFilter, setPaymentStatusFilter] = useState<"all" | "Paid" | "Pending" | "Failed">("all");
+  const [dateRangeFilter, setDateRangeFilter] = useState<string>("all");
+  const [deliverySlotFilter, setDeliverySlotFilter] = useState<string>("all");
+  const [pincodeFilter, setPincodeFilter] = useState<string>("all");
   const [showFilters, setShowFilters] = useState(false);
   const [selectedOrders, setSelectedOrders] = useState<Set<string>>(new Set());
-  const [showAddOrderDialog, setShowAddOrderDialog] = useState(false);
-  
-  const filteredOrders = orders.filter(order => {
-    const matchesSearch = order.order_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.customer_name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === "all" || order.status === statusFilter;
-    const matchesPayment = paymentFilter === "all" || order.payment_mode === paymentFilter;
-    const matchesZone = zoneFilter === "all" || order.zone === zoneFilter;
+
+  // Helper function to check date range
+  const checkDateRange = (createdAt: string, range: string): boolean => {
+    const orderDate = new Date(createdAt);
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const last14Days = new Date(today);
+    last14Days.setDate(last14Days.getDate() - 14);
+    const lastMonth = new Date(today);
+    lastMonth.setMonth(lastMonth.getMonth() - 1);
+    const last2Months = new Date(today);
+    last2Months.setMonth(last2Months.getMonth() - 2);
+
+    switch (range) {
+      case 'today':
+        return orderDate.toDateString() === today.toDateString();
+      case 'yesterday':
+        return orderDate.toDateString() === yesterday.toDateString();
+      case 'last14days':
+        return orderDate >= last14Days;
+      case 'last1month':
+        return orderDate >= lastMonth;
+      case 'last2months':
+        return orderDate >= last2Months;
+      case 'older':
+        return orderDate < last2Months;
+      default:
+        return true;
+    }
+  };
+
+  // Helper function to check delivery slot
+  const checkDeliverySlot = (deliverySlot: string, slot: string): boolean => {
+    const slotLower = deliverySlot.toLowerCase().trim();
     
-    return matchesSearch && matchesStatus && matchesPayment && matchesZone;
-  });
+    switch (slot) {
+      case 'morning':
+        return slotLower.includes('morning') || slotLower.includes('9:00') || slotLower.includes('10:00') || slotLower.includes('11:00');
+      case 'afternoon':
+        return slotLower.includes('afternoon') || slotLower.includes('1:00') || slotLower.includes('2:00') || slotLower.includes('3:00') || slotLower.includes('4:00');
+      case 'evening':
+        return slotLower.includes('evening') || slotLower.includes('5:00') || slotLower.includes('6:00') || slotLower.includes('7:00') || slotLower.includes('8:00');
+      default:
+        return true;
+    }
+  };
 
-  const zones = Array.from(new Set(orders.map(o => o.zone)));
+  // Helper function to extract pincode from address
+  const extractPincode = (address: string): string | null => {
+    const pincodeMatch = address.match(/\b\d{6}\b/);
+    return pincodeMatch ? pincodeMatch[0] : null;
+  };
 
-  const orderStats = useMemo(() => ({
-    total: orders.length,
-    placed: orders.filter(o => o.status === 'Placed').length,
-    accepted: orders.filter(o => o.status === 'Accepted').length,
-    packed: orders.filter(o => o.status === 'Packed').length,
-    dispatched: orders.filter(o => o.status === 'Dispatched').length,
-    delivered: orders.filter(o => o.status === 'Delivered').length,
-    cancelled: orders.filter(o => o.status === 'Cancelled').length,
-    returned: orders.filter(o => o.status === 'Returned').length,
-  }), []);
+  // Helper function to check pincode
+  const checkPincode = (address: string, pincode: string): boolean => {
+    if (pincode === "all") return true;
+    const extractedPincode = extractPincode(address);
+    return extractedPincode === pincode;
+  };
 
+  // Helper function to get payment status
   const getPaymentStatus = (order: typeof orders[0]): 'Paid' | 'Pending' | 'Failed' => {
     if (order.payment_mode === 'Online') {
       // Check if payment failed
@@ -54,6 +96,66 @@ const OrdersList = () => {
     if (order.status === 'Delivered') return 'Paid';
     return 'Pending';
   };
+  
+  const filteredOrders = (orders || []).filter(order => {
+    try {
+      const matchesSearch = order.order_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        order.customer_name?.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesStatus = statusFilter === "all" || order.status === statusFilter;
+      const matchesPayment = paymentFilter === "all" || order.payment_mode === paymentFilter;
+      const matchesPaymentStatus = paymentStatusFilter === "all" || getPaymentStatus(order) === paymentStatusFilter;
+      const matchesDateRange = dateRangeFilter === "all" || checkDateRange(order.created_at, dateRangeFilter);
+      const matchesDeliverySlot = deliverySlotFilter === "all" || checkDeliverySlot(order.delivery_slot, deliverySlotFilter);
+      const matchesPincode = pincodeFilter === "all" || checkPincode(order.address, pincodeFilter);
+      
+      // Debug logging for Payment Status and Date Range filters
+      if (paymentStatusFilter !== "all" || dateRangeFilter !== "all") {
+        console.log('Filter Debug:', {
+          orderId: order.id,
+          paymentStatus: getPaymentStatus(order),
+          paymentStatusFilter,
+          matchesPaymentStatus,
+          created_at: order.created_at,
+          dateRangeFilter,
+          matchesDateRange,
+          orderDate: new Date(order.created_at).toDateString()
+        });
+      }
+      
+      return matchesSearch && matchesStatus && matchesPayment && matchesPaymentStatus && matchesDateRange && matchesDeliverySlot && matchesPincode;
+    } catch (error) {
+      console.error('Error filtering order:', error, order);
+      return false;
+    }
+  });
+
+  const pincodes = Array.from(new Set((orders || []).map(o => extractPincode(o.address)))).filter(Boolean);
+
+  // Debug: Log filter results
+  console.log('Filter Results:', {
+    totalOrders: orders?.length || 0,
+    filteredOrders: filteredOrders.length,
+    statusFilter,
+    paymentStatusFilter,
+    dateRangeFilter,
+    deliverySlotFilter,
+    pincodeFilter
+  });
+
+  const orderStats = useMemo(() => {
+    const ordersList = orders || [];
+    return {
+      total: ordersList.length,
+      placed: ordersList.filter(o => o.status === 'Placed').length,
+      accepted: ordersList.filter(o => o.status === 'Accepted').length,
+      packed: ordersList.filter(o => o.status === 'Packed').length,
+      dispatched: ordersList.filter(o => o.status === 'Dispatched').length,
+      delivered: ordersList.filter(o => o.status === 'Delivered').length,
+      cancelled: ordersList.filter(o => o.status === 'Cancelled').length,
+      returned: ordersList.filter(o => o.status === 'Returned').length,
+    };
+  }, [orders]);
+
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -78,6 +180,43 @@ const OrdersList = () => {
     }
   };
 
+  const formatDeliverySlot = (deliverySlot: string) => {
+    // Handle different formats of delivery slot
+    const slot = deliverySlot.toLowerCase().trim();
+    
+    // If it already contains time range format like "11:00 AM - 1:00 PM"
+    if (slot.includes('am') || slot.includes('pm')) {
+      // Extract time range and determine shift
+      const timeRange = deliverySlot;
+      let shiftName = '';
+      
+      // Determine shift based on time
+      if (slot.includes('9:00') || slot.includes('10:00') || slot.includes('11:00')) {
+        shiftName = 'Morning';
+      } else if (slot.includes('1:00') || slot.includes('2:00') || slot.includes('3:00') || slot.includes('4:00')) {
+        shiftName = 'Afternoon';
+      } else if (slot.includes('5:00') || slot.includes('6:00') || slot.includes('7:00') || slot.includes('8:00')) {
+        shiftName = 'Evening';
+      } else {
+        shiftName = 'Afternoon'; // Default fallback
+      }
+      
+      return `${timeRange} (${shiftName})`;
+    }
+    
+    // Handle shift-only formats like "morning", "afternoon", "evening"
+    if (slot === 'morning') {
+      return '09:00 AM - 11:00 AM (Morning)';
+    } else if (slot === 'afternoon') {
+      return '11:00 AM - 1:00 PM (Afternoon)';
+    } else if (slot === 'evening') {
+      return '05:00 PM - 07:00 PM (Evening)';
+    }
+    
+    // Default fallback - return as is with Afternoon
+    return `${deliverySlot} (Afternoon)`;
+  };
+
   const handleSelectOrder = (orderId: string, checked: boolean) => {
     const newSelected = new Set(selectedOrders);
     if (checked) {
@@ -95,6 +234,18 @@ const OrdersList = () => {
       setSelectedOrders(new Set());
     }
   };
+
+  // Show loading state if orders are not loaded
+  if (!orders) {
+    return (
+      <div className="min-h-screen bg-muted/30 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading orders...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-muted/30">
@@ -117,110 +268,21 @@ const OrdersList = () => {
                 <Printer className="h-4 w-4" />
                 Multiple Print
               </Button>
-              <Dialog open={showAddOrderDialog} onOpenChange={setShowAddOrderDialog}>
-                <DialogTrigger asChild>
-                  <Button className="bg-success hover:bg-success/90">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add New Order
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                  <DialogTitle>Add New Order</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">Customer Name</label>
-                      <Input placeholder="Enter customer name" />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">Invoice Date</label>
-                      <Input type="date" />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">Due Date (Optional)</label>
-                      <Input type="date" />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">Payment Status</label>
-                      <Select>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select status" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="paid">Paid</SelectItem>
-                          <SelectItem value="pending">Pending</SelectItem>
-                          <SelectItem value="failed">Failed</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">Payment Mode</label>
-                    <Select>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Cash On Hand (₹5,000)" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="cod">Cash On Hand (₹5,000)</SelectItem>
-                        <SelectItem value="online">Online Payment</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">Income Account</label>
-                    <Input placeholder="Direct Sales (₹5,430)" disabled />
-                  </div>
-                  <div>
-                    <div className="flex justify-between items-center mb-2">
-                      <label className="text-sm font-medium">Invoice Items</label>
-                      <Button variant="link" size="sm" className="text-success">
-                        + Add Item
-                      </Button>
-                    </div>
-                    <div className="border rounded-lg p-4 text-center text-sm text-muted-foreground">
-                      No items added. Click "+ Add Item" to add items to the invoice.
-                    </div>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">Notes (optional)</label>
-                    <textarea 
-                      className="w-full min-h-[80px] px-3 py-2 border rounded-md" 
-                      placeholder="Add any notes for this invoice..."
-                    />
-                  </div>
-                  <div className="space-y-2 border-t pt-4">
-                    <div className="flex justify-between text-sm">
-                      <span>Subtotal:</span>
-                      <span>₹0.00</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span>Shipping Charge:</span>
-                      <Input type="number" defaultValue="0" className="w-24 h-8 text-right" />
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span>Discount (%):</span>
-                      <Input type="number" defaultValue="0" className="w-24 h-8 text-right" />
-                    </div>
-                    <div className="flex justify-between font-bold text-lg border-t pt-2">
-                      <span>Grand Total:</span>
-                      <span>₹0.00</span>
-                    </div>
-                  </div>
-                  <div className="flex justify-end gap-3 pt-4">
-                    <Button variant="outline" onClick={() => setShowAddOrderDialog(false)}>
-                      Cancel
-                    </Button>
-                    <Button className="bg-success hover:bg-success/90">
-                      Create Invoice
-                    </Button>
-                  </div>
-                </div>
-              </DialogContent>
-            </Dialog>
+              <Button 
+                variant="outline" 
+                className="flex items-center gap-2 text-orange-600 border-orange-200 hover:bg-orange-50"
+                onClick={resetOrders}
+              >
+                <XCircle className="h-4 w-4" />
+                Reset Orders
+              </Button>
+              <Button 
+                className="bg-success hover:bg-success/90"
+                onClick={() => navigate('/order-management/add-order')}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add New Order
+              </Button>
           </div>
         </div>
         </div>
@@ -228,7 +290,7 @@ const OrdersList = () => {
 
       <main className="container mx-auto px-6 py-8">
         {/* KPI Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-8">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4 mb-6 sm:mb-8">
           <Card className="bg-primary/5 border-primary/20">
             <CardContent className="p-4">
               <p className="text-xs text-muted-foreground mb-1">Total Orders</p>
@@ -279,6 +341,7 @@ const OrdersList = () => {
         </div>
 
         <div className="mb-6 space-y-4">
+          {/* Search Bar */}
           <div className="flex gap-3">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -300,48 +363,138 @@ const OrdersList = () => {
             </Button>
           </div>
 
+          {/* Enhanced Filter Section */}
           {showFilters && (
             <Card className="animate-fade-in">
               <CardContent className="p-4">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as any)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="All Status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Status</SelectItem>
-                      <SelectItem value="Placed">Placed</SelectItem>
-                      <SelectItem value="Accepted">Accepted</SelectItem>
-                      <SelectItem value="Packed">Packed</SelectItem>
-                      <SelectItem value="Dispatched">Dispatched</SelectItem>
-                      <SelectItem value="Delivered">Delivered</SelectItem>
-                      <SelectItem value="Cancelled">Cancelled</SelectItem>
-                      <SelectItem value="Returned">Returned</SelectItem>
-                    </SelectContent>
-                  </Select>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
+                  {/* Order Status Filter */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-muted-foreground">Order Status</label>
+                    <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as any)}>
+                      <SelectTrigger className="h-10">
+                        <SelectValue placeholder="All Status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Status</SelectItem>
+                        <SelectItem value="Placed">Placed</SelectItem>
+                        <SelectItem value="Accepted">Accepted</SelectItem>
+                        <SelectItem value="Packed">Packed</SelectItem>
+                        <SelectItem value="Dispatched">Dispatched</SelectItem>
+                        <SelectItem value="Delivered">Delivered</SelectItem>
+                        <SelectItem value="Cancelled">Cancelled</SelectItem>
+                        <SelectItem value="Returned">Returned</SelectItem>
+                        <SelectItem value="Failed">Failed</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-                  <Select value={paymentFilter} onValueChange={(v) => setPaymentFilter(v as any)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="All Payment" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Payment</SelectItem>
-                      <SelectItem value="COD">COD</SelectItem>
-                      <SelectItem value="Online">Online</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  {/* Payment Type Filter */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-muted-foreground">Payment Type</label>
+                    <Select value={paymentFilter} onValueChange={(v) => setPaymentFilter(v as any)}>
+                      <SelectTrigger className="h-10">
+                        <SelectValue placeholder="All Payment" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Payment</SelectItem>
+                        <SelectItem value="COD">Cash on Delivery</SelectItem>
+                        <SelectItem value="Online">Online Payment</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-                  <Select value={zoneFilter} onValueChange={setZoneFilter}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="All Zones" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Zones</SelectItem>
-                      {zones.map(zone => (
-                        <SelectItem key={zone} value={zone}>{zone}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  {/* Payment Status Filter */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-muted-foreground">Payment Status</label>
+                    <Select value={paymentStatusFilter} onValueChange={(v) => setPaymentStatusFilter(v as any)}>
+                      <SelectTrigger className="h-10">
+                        <SelectValue placeholder="All Status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Status</SelectItem>
+                        <SelectItem value="Paid">Paid</SelectItem>
+                        <SelectItem value="Pending">Pending</SelectItem>
+                        <SelectItem value="Failed">Failed</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Date Range Filter */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-muted-foreground">Date Range</label>
+                    <Select value={dateRangeFilter} onValueChange={setDateRangeFilter}>
+                      <SelectTrigger className="h-10">
+                        <SelectValue placeholder="All Dates" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Dates</SelectItem>
+                        <SelectItem value="today">Today's Orders</SelectItem>
+                        <SelectItem value="yesterday">Yesterday's Orders</SelectItem>
+                        <SelectItem value="last14days">Last 14 Days</SelectItem>
+                        <SelectItem value="last1month">Last 1 Month</SelectItem>
+                        <SelectItem value="last2months">Last 2 Months</SelectItem>
+                        <SelectItem value="older">Older</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Delivery Slot Filter */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-muted-foreground">Delivery Slot</label>
+                    <Select value={deliverySlotFilter} onValueChange={setDeliverySlotFilter}>
+                      <SelectTrigger className="h-10">
+                        <SelectValue placeholder="All Slots" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Slots</SelectItem>
+                        <SelectItem value="morning">Morning</SelectItem>
+                        <SelectItem value="afternoon">Afternoon</SelectItem>
+                        <SelectItem value="evening">Evening</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Pincode Zone Filter */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-muted-foreground">Pincode Zone</label>
+                    <Select value={pincodeFilter} onValueChange={setPincodeFilter}>
+                      <SelectTrigger className="h-10">
+                        <SelectValue placeholder="All Pincode Zones" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Pincode Zones</SelectItem>
+                        {pincodes.map(pincode => (
+                          <SelectItem key={pincode} value={pincode}>{pincode}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {/* Filter Actions */}
+                <div className="flex justify-end gap-2 mt-4 pt-4 border-t">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setStatusFilter("all");
+                      setPaymentFilter("all");
+                      setPaymentStatusFilter("all");
+                      setDateRangeFilter("all");
+                      setDeliverySlotFilter("all");
+                      setPincodeFilter("all");
+                    }}
+                  >
+                    Clear All
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowFilters(false)}
+                  >
+                    Apply Filters
+                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -365,9 +518,9 @@ const OrdersList = () => {
                     onClick={(e) => e.stopPropagation()}
                   />
                   <Link to={`/order-management/orders/${order.id}`} className="flex-1">
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
                       <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-2">
                           <h3 className="font-bold text-lg text-foreground">{order.order_number}</h3>
                           <span
                             className={`inline-flex items-center justify-center rounded-full px-3 h-6 text-xs font-medium leading-none ${
@@ -402,30 +555,30 @@ const OrdersList = () => {
                         </div>
                       </div>
                       
-                      <div className="flex text-sm py-3 border-t border-b mt-[10px] my-0.5">
-                        <div className="flex items-center gap-2 flex-1 pr-3 border-r border-gray-200">
-                          <div className="rounded-full p-2 bg-orange-100">
+                      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 text-sm py-3 border-t border-b mt-[10px] my-0.5">
+                        <div className="flex items-center gap-2 flex-1 pr-2 border-r border-gray-200">
+                          <div className="rounded-full p-2 bg-orange-100 flex-shrink-0">
                             <Package className="h-4 w-4 text-orange-600" />
                           </div>
-                          <div>
+                          <div className="min-w-0 flex-1">
                             <p className="text-xs text-muted-foreground">Items</p>
                             <p className="font-semibold text-foreground mt-1">{order.items.length} Items</p>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2 flex-1 px-3 border-r border-gray-200">
-                          <div className="rounded-full p-2 bg-blue-100">
+                        <div className="flex items-center gap-2 flex-1 px-2 border-r border-gray-200">
+                          <div className="rounded-full p-2 bg-blue-100 flex-shrink-0">
                             <Clock className="h-4 w-4 text-blue-600" />
                           </div>
-                          <div className="flex-1 min-w-0">
+                          <div className="min-w-0 flex-1">
                             <p className="text-xs text-muted-foreground">Delivery Slot</p>
-                            <p className="font-semibold text-foreground truncate mt-1">{order.delivery_slot}</p>
+                            <p className="font-semibold text-foreground mt-1 break-words">{formatDeliverySlot(order.delivery_slot)}</p>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2 flex-1 px-3 border-r border-gray-200">
-                          <div className="rounded-full p-2 bg-green-100">
+                        <div className="flex items-center gap-2 flex-1 px-2 border-r border-gray-200">
+                          <div className="rounded-full p-2 bg-green-100 flex-shrink-0">
                             <CreditCard className="h-4 w-4 text-green-600" />
                           </div>
-                          <div>
+                          <div className="min-w-0 flex-1">
                             <p className="text-xs text-muted-foreground">Payment Status</p>
                             <div className="mt-1">
                               <Badge variant={getPaymentStatus(order) === 'Paid' ? 'default' : getPaymentStatus(order) === 'Failed' ? 'destructive' : 'secondary'}
@@ -436,11 +589,11 @@ const OrdersList = () => {
                             </div>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2 flex-1 pl-3">
-                          <div className="rounded-full p-2 bg-purple-100">
+                        <div className="flex items-center gap-2 flex-1 pl-2">
+                          <div className="rounded-full p-2 bg-purple-100 flex-shrink-0">
                             {getStatusIcon(order.status)}
                           </div>
-                          <div>
+                          <div className="min-w-0 flex-1">
                             <p className="text-xs text-muted-foreground">Status</p>
                             <div className="mt-1">
                               <StatusBadge status={order.status} />
