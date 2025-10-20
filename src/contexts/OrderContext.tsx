@@ -75,27 +75,35 @@ export const OrderProvider: React.FC<OrderProviderProps> = ({ children }) => {
   // Note: localStorage saving is handled manually in addOrder, updateOrder, and deleteOrder functions
 
   const addOrder = (orderData: Omit<Order, 'id' | 'order_number' | 'created_at' | 'updated_at'>) => {
-    const now = new Date().toISOString();
-    const orderNumber = `ORD-${Date.now()}`;
-    
-    const newOrder: Order = {
-      ...orderData,
-      id: `ORD${Date.now()}`,
-      order_number: orderNumber,
-      created_at: now,
-      updated_at: now,
-    };
+    try {
+      console.log('OrderContext addOrder called with:', orderData);
+      const now = new Date().toISOString();
+      const orderNumber = `ORD-${Date.now()}`;
+      
+      const newOrder: Order = {
+        ...orderData,
+        id: `ORD${Date.now()}`,
+        order_number: orderNumber,
+        created_at: now,
+        updated_at: now,
+      };
+      
+      console.log('Created new order:', newOrder);
 
-    setOrders(prev => {
-      // Add new order at the beginning, keep existing orders
-      const newOrders = [newOrder, ...prev];
-      // Remove duplicates and save only the new orders (excluding dummy data) to localStorage
-      const uniqueOrders = removeDuplicates(newOrders);
-      const savedOrders = uniqueOrders.filter(order => !dummyOrders.some(dummy => dummy.id === order.id));
-      localStorage.setItem('warehouse-orders', JSON.stringify(savedOrders));
-      return uniqueOrders;
-    });
-    return newOrder;
+      setOrders(prev => {
+        // Add new order at the beginning, keep existing orders
+        const newOrders = [newOrder, ...prev];
+        // Remove duplicates and save only the new orders (excluding dummy data) to localStorage
+        const uniqueOrders = removeDuplicates(newOrders);
+        const savedOrders = uniqueOrders.filter(order => !dummyOrders.some(dummy => dummy.id === order.id));
+        localStorage.setItem('warehouse-orders', JSON.stringify(savedOrders));
+        return uniqueOrders;
+      });
+      return newOrder;
+    } catch (error) {
+      console.error('Error in addOrder:', error);
+      throw error;
+    }
   };
 
   const updateOrder = (id: string, updates: Partial<Order>) => {

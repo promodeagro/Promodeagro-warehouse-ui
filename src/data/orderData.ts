@@ -32,6 +32,8 @@ export interface Order {
   updated_at: string;
   delivery_slot: string;
   notes?: string;
+  discount?: number;
+  shipping_charges?: number;
 }
 
 export interface Rider {

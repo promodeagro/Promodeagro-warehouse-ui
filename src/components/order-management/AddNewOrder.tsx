@@ -51,8 +51,11 @@ interface CustomerInfo {
 
 const AddNewOrder = () => {
   const navigate = useNavigate();
-  const { addOrder } = useOrders();
+  const { addOrder, orders } = useOrders();
   const { products } = useProducts();
+  
+  // Debug: Check if useOrders is working
+  console.log('useOrders hook result:', { addOrder: typeof addOrder, ordersCount: orders?.length });
   
   // Customer Information
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({
@@ -102,23 +105,50 @@ const AddNewOrder = () => {
 
   // Order Details
   const [orderNotes, setOrderNotes] = useState('');
-  const [deliveryDate, setDeliveryDate] = useState('');
+  const [deliveryDate, setDeliveryDate] = useState(() => {
+    // Initialize with today's date immediately
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  });
   const [deliveryTime, setDeliveryTime] = useState('');
   const [paymentMode, setPaymentMode] = useState<'Online' | 'COD'>('COD');
 
   // Set today's date when component mounts
   useEffect(() => {
     const today = new Date();
+    console.log('Raw date object:', today);
+    console.log('Timezone offset:', today.getTimezoneOffset());
+    
     // Use local date instead of UTC to avoid timezone issues
     const year = today.getFullYear();
     const month = String(today.getMonth() + 1).padStart(2, '0');
     const day = String(today.getDate()).padStart(2, '0');
     const todayString = `${year}-${month}-${day}`;
-    setDeliveryDate(todayString);
+    
     console.log('Setting delivery date to:', todayString);
     console.log('Current date object:', today);
     console.log('Local date string:', today.toLocaleDateString());
+    console.log('ISO string:', today.toISOString());
+    console.log('Date parts:', { year, month, day });
+    
+    setDeliveryDate(todayString);
   }, []);
+
+  // Ensure date is always correct (fallback)
+  useEffect(() => {
+    if (!deliveryDate) {
+      const today = new Date();
+      const year = today.getFullYear();
+      const month = String(today.getMonth() + 1).padStart(2, '0');
+      const day = String(today.getDate()).padStart(2, '0');
+      const todayString = `${year}-${month}-${day}`;
+      setDeliveryDate(todayString);
+      console.log('Fallback: Setting delivery date to:', todayString);
+    }
+  }, [deliveryDate]);
 
   // Pricing
   const [subtotal, setSubtotal] = useState(0);
@@ -218,6 +248,30 @@ const AddNewOrder = () => {
           pincode: '500003',
           addresses: [
             { id: 'A003', flatNo: '789', area: 'Suburb', landmark: 'Near School', pincode: '500003' }
+          ]
+        },
+        {
+          id: 'C003',
+          phone: '9999999999',
+          name: 'Test Customer',
+          flatNo: '25',
+          area: 'gg',
+          landmark: 'grw',
+          pincode: '500086',
+          addresses: [
+            { id: 'A004', flatNo: '25', area: 'gg', landmark: 'grw', pincode: '500086' }
+          ]
+        },
+        {
+          id: 'C004',
+          phone: '1234567890',
+          name: 'Demo Customer',
+          flatNo: '100',
+          area: 'Demo Area',
+          landmark: 'Demo Landmark',
+          pincode: '123456',
+          addresses: [
+            { id: 'A005', flatNo: '100', area: 'Demo Area', landmark: 'Demo Landmark', pincode: '123456' }
           ]
         }
       ];
@@ -523,7 +577,31 @@ const AddNewOrder = () => {
     setIsCreatingOrder(true);
     setOrderCreationError('');
     
+    // Validate required fields
+    if (!customerInfo.phone || !customerInfo.name || !customerInfo.flatNo || !customerInfo.area || !customerInfo.landmark || !customerInfo.pincode) {
+      setOrderCreationError('Please fill in all required customer information fields.');
+      setIsCreatingOrder(false);
+      return;
+    }
+    
+    if (orderItems.length === 0) {
+      setOrderCreationError('Please add at least one item to the order.');
+      setIsCreatingOrder(false);
+      return;
+    }
+    
     try {
+      console.log('Starting order creation...');
+      console.log('Customer Info:', customerInfo);
+      console.log('Order Items:', orderItems);
+      console.log('Discount:', discountAmount);
+      console.log('Shipping Charges:', shippingCharges);
+      console.log('Payment Mode:', paymentMode);
+      console.log('Delivery Time:', deliveryTime);
+      
+      // Test if addOrder function exists
+      console.log('addOrder function:', typeof addOrder);
+      
       // Simulate API delay
       await new Promise(resolve => setTimeout(resolve, 1000));
       
@@ -538,8 +616,26 @@ const AddNewOrder = () => {
         is_substituted: false
       }));
 
+      console.log('Creating order with data:', {
+        customer_id: customerId || `C${Date.now()}`,
+        customer_name: customerInfo.name,
+        customer_phone: customerInfo.phone,
+        address: `${customerInfo.flatNo}, ${customerInfo.area}, ${customerInfo.landmark}, ${customerInfo.pincode}`,
+        lat: 28.4595,
+        lng: 77.0266,
+        zone: 'Zone A',
+        total_amount: grandTotal,
+        payment_mode: paymentMode as 'COD' | 'Online',
+        status: 'Placed' as const,
+        items: orderItemsFormatted,
+        delivery_slot: deliveryTime || '11:00 AM - 1:00 PM',
+        notes: orderNotes,
+        discount: discountAmount,
+        shipping_charges: shippingCharges
+      });
+
       // Create the order using OrderContext
-      const newOrder = addOrder({
+      const orderData = {
         customer_id: customerId || `C${Date.now()}`,
         customer_name: customerInfo.name,
         customer_phone: customerInfo.phone,
@@ -552,8 +648,23 @@ const AddNewOrder = () => {
         status: 'Placed' as const,
         items: orderItemsFormatted,
         delivery_slot: deliveryTime || '11:00 AM - 1:00 PM',
-        notes: orderNotes
-      });
+        notes: orderNotes,
+        discount: discountAmount || 0,
+        shipping_charges: shippingCharges || 0
+      };
+      
+      console.log('Final order data being sent to addOrder:', orderData);
+      
+      // Test the addOrder function call
+      let newOrder;
+      try {
+        console.log('Calling addOrder function...');
+        newOrder = addOrder(orderData);
+        console.log('addOrder returned:', newOrder);
+      } catch (addOrderError) {
+        console.error('Error in addOrder call:', addOrderError);
+        throw addOrderError;
+      }
       
       console.log('Order created successfully:', newOrder);
       
@@ -564,11 +675,20 @@ const AddNewOrder = () => {
       navigate('/order-management/orders');
     } catch (error) {
       console.error('Error creating order:', error);
+      console.error('Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+        error
+      });
       setOrderCreationError('Failed to create order. Please try again.');
     } finally {
       setIsCreatingOrder(false);
     }
   };
+
+  // Debug: Log current delivery date
+  console.log('Current deliveryDate state:', deliveryDate);
+  console.log('Current date for comparison:', new Date().toISOString().split('T')[0]);
 
   return (
     <div className="space-y-6">
@@ -1057,7 +1177,13 @@ const AddNewOrder = () => {
                   type="date"
                   value={deliveryDate}
                   onChange={(e) => setDeliveryDate(e.target.value)}
-                  min={new Date().toISOString().split('T')[0]}
+                  min={(() => {
+                    const today = new Date();
+                    const year = today.getFullYear();
+                    const month = String(today.getMonth() + 1).padStart(2, '0');
+                    const day = String(today.getDate()).padStart(2, '0');
+                    return `${year}-${month}-${day}`;
+                  })()}
                 />
               </div>
               <div className="space-y-2">

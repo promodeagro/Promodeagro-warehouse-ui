@@ -14,7 +14,9 @@ import {
   Route,
   TrendingUp,
   ShoppingCart,
-  FileText
+  FileText,
+  ChevronDown,
+  ChevronRight
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -56,39 +58,41 @@ const navigationItems = [
       { title: 'History', href: '/delivery/history', icon: BarChart3 },
       { title: 'Runsheets', href: '/delivery/runsheets', icon: ClipboardList }
     ]
-  },
-  {
-    title: 'Logistics',
-    icon: Route,
-    items: [
-      { title: 'Fleet', href: '/logistics/fleet', icon: Truck },
-      { title: 'Routes', href: '/logistics/routes', icon: Route },
-      { title: 'Tracking', href: '/logistics/tracking', icon: BarChart3 },
-      { title: 'Analytics', href: '/logistics/analytics', icon: TrendingUp }
-    ]
-  },
-  {
-    title: 'Analytics',
-    href: '/analytics',
-    icon: BarChart3,
-    description: 'Performance metrics'
-  },
-  {
-    title: 'Quality',
-    href: '/quality-metrics',
-    icon: PackageCheck,
-    description: 'Quality metrics'
-  },
-  {
-    title: 'Staff',
-    href: '/staff',
-    icon: Users,
-    description: 'Staff management'
   }
+  // COMMENTED OUT FOR FUTURE USE - Uncomment when needed
+  // {
+  //   title: 'Logistics',
+  //   icon: Route,
+  //   items: [
+  //     { title: 'Fleet', href: '/logistics/fleet', icon: Truck },
+  //     { title: 'Routes', href: '/logistics/routes', icon: Route },
+  //     { title: 'Tracking', href: '/logistics/tracking', icon: BarChart3 },
+  //     { title: 'Analytics', href: '/logistics/analytics', icon: TrendingUp }
+  //   ]
+  // },
+  // {
+  //   title: 'Analytics',
+  //   href: '/analytics',
+  //   icon: BarChart3,
+  //   description: 'Performance metrics'
+  // },
+  // {
+  //   title: 'Quality',
+  //   href: '/quality-metrics',
+  //   icon: PackageCheck,
+  //   description: 'Quality metrics'
+  // },
+  // {
+  //   title: 'Staff',
+  //   href: '/staff',
+  //   icon: Users,
+  //   description: 'Staff management'
+  // }
 ];
 
 export function Navigation() {
   const [isOpen, setIsOpen] = useState(false);
+  const [openDropdowns, setOpenDropdowns] = useState<Set<string>>(new Set());
   const location = useLocation();
 
   const isActive = (href: string) => {
@@ -99,21 +103,39 @@ export function Navigation() {
     return items.some(item => location.pathname === item.href);
   };
 
+  const toggleDropdown = (title: string) => {
+    setOpenDropdowns(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(title)) {
+        newSet.delete(title);
+      } else {
+        newSet.add(title);
+      }
+      return newSet;
+    });
+  };
+
   const NavContent = () => (
     <div className="flex flex-col h-full">
       <div className="p-6 border-b">
-        <h2 className="text-xl font-bold text-gradient-primary">
-          Warehouse Manager
-        </h2>
-        <p className="text-sm text-muted-foreground mt-1">
-          Operations Portal
-        </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-xl font-bold text-gradient-primary">
+              Warehouse Manager
+            </h2>
+            <p className="text-sm text-muted-foreground mt-1">
+              Operations Portal
+            </p>
+          </div>
+          {/* Theme toggle removed from header as requested */}
+        </div>
       </div>
       
       <nav className="flex-1 p-4 space-y-2">
         {navigationItems.map((item, index) => (
           <div key={index}>
             {item.href ? (
+              // Single page link (no dropdown)
               <Link
                 to={item.href}
                 className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
@@ -127,40 +149,63 @@ export function Navigation() {
                 <span className="font-medium">{item.title}</span>
               </Link>
             ) : (
+              // Dropdown parent menu
               <div>
-                <div className={`flex items-center gap-3 px-3 py-2 rounded-lg font-medium ${
-                  isParentActive(item.items || []) ? 'text-primary' : 'text-foreground'
-                }`}>
-                  <item.icon className="h-5 w-5" />
-                  <span>{item.title}</span>
-                </div>
-                <div className="ml-8 mt-1 space-y-1">
-                  {item.items?.map((subItem, subIndex) => (
-                    <Link
-                      key={subIndex}
-                      to={subItem.href}
-                      className={`flex items-center gap-2 px-3 py-1.5 rounded text-sm transition-colors ${
-                        isActive(subItem.href)
-                          ? 'bg-primary/10 text-primary font-medium'
-                          : 'hover:bg-muted text-muted-foreground'
-                      }`}
-                      onClick={() => setIsOpen(false)}
-                    >
-                      <subItem.icon className="h-4 w-4" />
-                      {subItem.title}
-                    </Link>
-                  ))}
-                </div>
+                <button
+                  onClick={() => toggleDropdown(item.title)}
+                  className={`flex items-center justify-between w-full px-3 py-2 rounded-lg font-medium transition-colors ${
+                    isParentActive(item.items || []) 
+                      ? 'text-primary bg-primary/5' 
+                      : 'text-foreground hover:bg-muted'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <item.icon className="h-5 w-5" />
+                    <span>{item.title}</span>
+                  </div>
+                  {openDropdowns.has(item.title) ? (
+                    <ChevronDown className="h-4 w-4" />
+                  ) : (
+                    <ChevronRight className="h-4 w-4" />
+                  )}
+                </button>
+                
+                {/* Child menu items - only show if dropdown is open */}
+                {openDropdowns.has(item.title) && (
+                  <div className="ml-8 mt-1 space-y-1">
+                    {item.items?.map((subItem, subIndex) => (
+                      <Link
+                        key={subIndex}
+                        to={subItem.href}
+                        className={`flex items-center gap-2 px-3 py-1.5 rounded text-sm transition-colors ${
+                          isActive(subItem.href)
+                            ? 'bg-primary/10 text-primary font-medium'
+                            : 'hover:bg-muted text-muted-foreground'
+                        }`}
+                        onClick={() => setIsOpen(false)}
+                      >
+                        <subItem.icon className="h-4 w-4" />
+                        {subItem.title}
+                      </Link>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </div>
         ))}
       </nav>
       
-      <div className="p-4 border-t">
-        <div className="flex items-center justify-between">
-          <span className="text-sm text-muted-foreground">Theme</span>
-          <ThemeToggle />
+      <div className="p-3 border-t">
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-muted-foreground">Notification</span>
+            <NotificationBell />
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-muted-foreground">Theme</span>
+            <ThemeToggle />
+          </div>
         </div>
       </div>
     </div>
@@ -168,13 +213,7 @@ export function Navigation() {
 
   return (
     <>
-      {/* Top Header with Notifications */}
-      <div className="fixed top-0 right-0 z-50 p-2 sm:p-4">
-        <div className="flex items-center gap-1 sm:gap-2">
-          <NotificationBell />
-          <ThemeToggle />
-        </div>
-      </div>
+      {/* Top Header icons removed per request */}
 
       {/* Mobile Navigation */}
       <div className="lg:hidden">

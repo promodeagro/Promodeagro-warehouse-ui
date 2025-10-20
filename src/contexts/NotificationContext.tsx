@@ -213,7 +213,7 @@ export const NotificationBell = () => {
       </Button>
 
       {isOpen && (
-        <div className="absolute right-0 top-12 w-72 sm:w-80 bg-white border rounded-lg shadow-lg z-50 max-h-96 overflow-y-auto">
+        <div className="absolute left-1/2 transform -translate-x-1/2 bottom-12 w-72 sm:w-80 bg-white border rounded-lg shadow-lg z-50 h-96 flex flex-col">
           <div className="p-4 border-b">
             <div className="flex items-center justify-between">
               <h3 className="font-semibold">Notifications</h3>
@@ -227,7 +227,7 @@ export const NotificationBell = () => {
             </div>
           </div>
           
-          <div className="max-h-64 overflow-y-auto">
+          <div className="flex-1 overflow-y-auto">
             {notifications.length === 0 ? (
               <div className="p-4 text-center text-gray-500">
                 No notifications

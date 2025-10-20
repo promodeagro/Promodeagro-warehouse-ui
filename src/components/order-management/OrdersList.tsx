@@ -129,7 +129,15 @@ const OrdersList = () => {
     }
   });
 
+  // TODO: Replace with pincode module integration
+  // This will be replaced with dynamic pincode data from the pincode module
   const pincodes = Array.from(new Set((orders || []).map(o => extractPincode(o.address)))).filter(Boolean);
+  
+  // Future pincode module integration points:
+  // 1. Fetch pincodes from pincode module API
+  // 2. Display added/removed/active pincodes in the filter
+  // 3. Show pincode statistics (total, active, inactive, etc.)
+  // 4. Allow pincode management from this interface
 
   // Debug: Log filter results
   console.log('Filter Results:', {
@@ -280,9 +288,9 @@ const OrdersList = () => {
                 className="bg-success hover:bg-success/90"
                 onClick={() => navigate('/order-management/add-order')}
               >
-                <Plus className="h-4 w-4 mr-2" />
-                Add New Order
-              </Button>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add New Order
+                  </Button>
           </div>
         </div>
         </div>
@@ -371,33 +379,33 @@ const OrdersList = () => {
                   {/* Order Status Filter */}
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-muted-foreground">Order Status</label>
-                    <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as any)}>
+                  <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as any)}>
                       <SelectTrigger className="h-10">
-                        <SelectValue placeholder="All Status" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Status</SelectItem>
-                        <SelectItem value="Placed">Placed</SelectItem>
-                        <SelectItem value="Accepted">Accepted</SelectItem>
-                        <SelectItem value="Packed">Packed</SelectItem>
-                        <SelectItem value="Dispatched">Dispatched</SelectItem>
-                        <SelectItem value="Delivered">Delivered</SelectItem>
-                        <SelectItem value="Cancelled">Cancelled</SelectItem>
-                        <SelectItem value="Returned">Returned</SelectItem>
-                        <SelectItem value="Failed">Failed</SelectItem>
-                      </SelectContent>
-                    </Select>
+                      <SelectValue placeholder="All Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Status</SelectItem>
+                      <SelectItem value="Placed">Order Placed</SelectItem>
+                      <SelectItem value="Accepted">Order Processing</SelectItem>
+                      <SelectItem value="Packed">Packed</SelectItem>
+                      <SelectItem value="Dispatched">On The Way</SelectItem>
+                      <SelectItem value="Delivered">Delivered</SelectItem>
+                      <SelectItem value="Cancelled">Cancel Orders</SelectItem>
+                      <SelectItem value="Returned">Undelivered</SelectItem>
+                      <SelectItem value="Failed">Request for Cancellation</SelectItem>
+                    </SelectContent>
+                  </Select>
                   </div>
 
                   {/* Payment Type Filter */}
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-muted-foreground">Payment Type</label>
-                    <Select value={paymentFilter} onValueChange={(v) => setPaymentFilter(v as any)}>
+                  <Select value={paymentFilter} onValueChange={(v) => setPaymentFilter(v as any)}>
                       <SelectTrigger className="h-10">
-                        <SelectValue placeholder="All Payment" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Payment</SelectItem>
+                      <SelectValue placeholder="All Payment" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Payment</SelectItem>
                         <SelectItem value="COD">Cash on Delivery</SelectItem>
                         <SelectItem value="Online">Online Payment</SelectItem>
                       </SelectContent>
@@ -451,8 +459,8 @@ const OrdersList = () => {
                         <SelectItem value="morning">Morning</SelectItem>
                         <SelectItem value="afternoon">Afternoon</SelectItem>
                         <SelectItem value="evening">Evening</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    </SelectContent>
+                  </Select>
                   </div>
 
                   {/* Pincode Zone Filter */}
@@ -461,14 +469,14 @@ const OrdersList = () => {
                     <Select value={pincodeFilter} onValueChange={setPincodeFilter}>
                       <SelectTrigger className="h-10">
                         <SelectValue placeholder="All Pincode Zones" />
-                      </SelectTrigger>
-                      <SelectContent>
+                    </SelectTrigger>
+                    <SelectContent>
                         <SelectItem value="all">All Pincode Zones</SelectItem>
                         {pincodes.map(pincode => (
                           <SelectItem key={pincode} value={pincode}>{pincode}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   </div>
                 </div>
 
@@ -528,10 +536,10 @@ const OrdersList = () => {
                                 ? 'bg-[#16a249] text-white'
                                 : 'bg-[#000000] text-white'
                             }`}
-                          >
-                            {order.payment_mode === 'Online' ? 'Prepaid' : 'COD'}
+                        >
+                          {order.payment_mode === 'Online' ? 'Prepaid' : 'COD'}
                           </span>
-                        </div>
+                          </div>
                           <div className="flex items-center gap-4 text-sm text-muted-foreground mb-2">
                             <div className="flex items-center gap-1">
                               <User className="h-3 w-3" />
@@ -581,13 +589,13 @@ const OrdersList = () => {
                           <div className="min-w-0 flex-1">
                             <p className="text-xs text-muted-foreground">Payment Status</p>
                             <div className="mt-1">
-                              <Badge variant={getPaymentStatus(order) === 'Paid' ? 'default' : getPaymentStatus(order) === 'Failed' ? 'destructive' : 'secondary'}
-                                className={getPaymentStatus(order) === 'Paid' ? 'bg-green-100 text-green-700' : ''}
-                              >
-                                {getPaymentStatus(order)}
-                              </Badge>
-                            </div>
+                            <Badge variant={getPaymentStatus(order) === 'Paid' ? 'default' : getPaymentStatus(order) === 'Failed' ? 'destructive' : 'secondary'}
+                              className={getPaymentStatus(order) === 'Paid' ? 'bg-green-100 text-green-700' : ''}
+                            >
+                              {getPaymentStatus(order)}
+                            </Badge>
                           </div>
+                        </div>
                         </div>
                         <div className="flex items-center gap-2 flex-1 pl-2">
                           <div className="rounded-full p-2 bg-purple-100 flex-shrink-0">

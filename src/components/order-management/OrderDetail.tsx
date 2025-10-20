@@ -32,7 +32,7 @@ const OrderDetail = () => {
   const [showAddItemDialog, setShowAddItemDialog] = useState(false);
   const [selectedProducts, setSelectedProducts] = useState<{[key: string]: number}>({});
   const [showDiscountDialog, setShowDiscountDialog] = useState(false);
-  const [discountAmount, setDiscountAmount] = useState<number>(0);
+  const [discountAmount, setDiscountAmount] = useState<number>(order?.discount || 0);
   const [orderStatus, setOrderStatus] = useState(order?.status || 'Placed');
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
@@ -172,7 +172,7 @@ const OrderDetail = () => {
   };
 
   const subtotal = orderItems.reduce((sum, item) => sum + item.subtotal, 0);
-  const [shippingCharges, setShippingCharges] = useState<number>(0);
+  const [shippingCharges, setShippingCharges] = useState<number>(order?.shipping_charges || 0);
   const [showShippingDialog, setShowShippingDialog] = useState(false);
   const [addShipping, setAddShipping] = useState<string>('0');
   const [subtractShipping, setSubtractShipping] = useState<string>('0');
