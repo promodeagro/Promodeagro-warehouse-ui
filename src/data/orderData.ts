@@ -1,6 +1,6 @@
 // Order Management Data Types and Dummy Data
 
-export type OrderStatus = 'Placed' | 'Accepted' | 'Packed' | 'Dispatched' | 'Delivered' | 'Cancelled' | 'Returned' | 'Failed';
+export type OrderStatus = 'Placed' | 'Accepted' | 'Packed' | 'Dispatched' | 'Delivered' | 'Cancelled' | 'Returned' | 'Failed' | 'Out of Stock';
 export type PaymentMode = 'COD' | 'Online';
 
 export interface OrderItem {
@@ -34,6 +34,10 @@ export interface Order {
   notes?: string;
   discount?: number;
   shipping_charges?: number;
+  packing_status?: 'pending' | 'assigned' | 'in_process' | 'packed' | 'out_of_stock';
+  assigned_packer_id?: string;
+  assigned_packer_name?: string;
+  pincode?: string;
 }
 
 export interface Rider {
@@ -82,7 +86,11 @@ export const orders: Order[] = [
     created_at: new Date().toISOString(),
     updated_at: '2025-01-10T09:15:00Z',
     delivery_slot: 'afternoon',
-    notes: 'Please call before delivery'
+    notes: 'Please call before delivery',
+    packing_status: 'packed',
+    assigned_packer_id: 'PKR-001',
+    assigned_packer_name: 'Ravi Kumar',
+    pincode: '110001'
   },
   {
     id: 'ORD002',
@@ -104,7 +112,11 @@ export const orders: Order[] = [
     ],
     created_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), // Yesterday
     updated_at: '2025-01-10T10:00:00Z',
-    delivery_slot: '11:00 AM - 1:00 PM'
+    delivery_slot: '11:00 AM - 1:00 PM',
+    packing_status: 'dispatched',
+    assigned_packer_id: 'PKR-002',
+    assigned_packer_name: 'Priya Sharma',
+    pincode: '110016'
   },
   {
     id: 'ORD003',
@@ -125,29 +137,11 @@ export const orders: Order[] = [
     ],
     created_at: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days ago
     updated_at: '2025-01-10T09:00:00Z',
-    delivery_slot: 'morning'
-  },
-  {
-    id: 'ORD004',
-    order_number: 'ORD-20251010-0004',
-    customer_id: 'C004',
-    customer_name: 'Sneha Reddy',
-    customer_phone: '+91 98765 43213',
-    address: '321, Golf Course Road, Gurugram',
-    lat: 28.4646,
-    lng: 77.0299,
-    zone: 'Zone A',
-    total_amount: 405,
-    payment_mode: 'COD',
-    status: 'Delivered',
-    items: [
-      { id: 'OI010', product_id: 'P001', product_name: 'Organic Tomatoes', quantity: 3, price: 45, subtotal: 135, is_substituted: false },
-      { id: 'OI011', product_id: 'P004', product_name: 'Shimla Apples', quantity: 2, price: 120, subtotal: 240, is_substituted: false },
-      { id: 'OI012', product_id: 'P002', product_name: 'Fresh Potatoes', quantity: 1, price: 30, subtotal: 30, is_substituted: false },
-    ],
-    created_at: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days ago
-    updated_at: '2025-01-10T12:30:00Z',
-    delivery_slot: '11:00 AM - 1:00 PM'
+    delivery_slot: 'morning',
+    packing_status: 'pending',
+    assigned_packer_id: undefined,
+    assigned_packer_name: undefined,
+    pincode: '110075'
   },
   {
     id: 'ORD005',
@@ -169,7 +163,37 @@ export const orders: Order[] = [
     ],
     created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 days ago
     updated_at: '2025-01-10T09:45:00Z',
-    delivery_slot: 'evening'
+    delivery_slot: 'evening',
+    packing_status: 'pending',
+    assigned_packer_id: undefined,
+    assigned_packer_name: undefined,
+    pincode: '110024'
+  },
+  {
+    id: 'ORD006',
+    order_number: 'ORD-20251010-0006',
+    customer_id: 'C006',
+    customer_name: 'Amit Verma',
+    customer_phone: '+91 98765 43213',
+    address: '789, Cyber City, Gurugram',
+    lat: 28.4960,
+    lng: 77.0950,
+    zone: 'Zone B',
+    total_amount: 250,
+    payment_mode: 'Online',
+    status: 'Out of Stock',
+    items: [
+      { id: 'OI010', product_id: 'P001', product_name: 'Organic Tomatoes', quantity: 3, price: 45, subtotal: 135, is_substituted: false },
+      { id: 'OI011', product_id: 'P002', product_name: 'Fresh Potatoes', quantity: 2, price: 30, subtotal: 60, is_substituted: false },
+      { id: 'OI012', product_id: 'P003', product_name: 'Red Onions', quantity: 1, price: 35, subtotal: 35, is_substituted: false },
+    ],
+    created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2 hours ago
+    updated_at: new Date(Date.now() - 30 * 60 * 1000).toISOString(), // 30 minutes ago
+    delivery_slot: 'morning',
+    packing_status: 'out_of_stock',
+    assigned_packer_id: 'PKR-002',
+    assigned_packer_name: 'Priya Sharma',
+    pincode: '110016'
   }
 ];
 

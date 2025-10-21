@@ -650,7 +650,8 @@ const AddNewOrder = () => {
         delivery_slot: deliveryTime || '11:00 AM - 1:00 PM',
         notes: orderNotes,
         discount: discountAmount || 0,
-        shipping_charges: shippingCharges || 0
+        shipping_charges: shippingCharges || 0,
+        pincode: customerInfo.pincode
       };
       
       console.log('Final order data being sent to addOrder:', orderData);

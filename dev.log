@@ -1,0 +1,83 @@
+nohup: ignoring input
+
+> warehouse-manager-portal@0.0.0 dev
+> vite --port 8081
+
+
+  VITE v5.4.19  ready in 217 ms
+
+  ➜  Local:   http://localhost:8081/
+  ➜  Network: http://31.97.132.80:8081/
+6:44:24 AM [vite] hmr update /src/contexts/OrderContext.tsx, /src/index.css
+6:44:26 AM [vite] hmr invalidate /src/contexts/OrderContext.tsx Could not Fast Refresh ("useOrders" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react-swc#consistent-components-exports
+6:44:26 AM [vite] hmr update /src/App.tsx, /src/index.css, /src/components/order-management/OrdersList.tsx, /src/components/order-management/OrderDetail.tsx, /src/components/order-management/AddNewOrder.tsx, /src/components/order-management/PackerOverview.tsx
+6:44:54 AM [vite] hmr update /src/components/order-management/PackerOverview.tsx, /src/index.css
+6:45:41 AM [vite] hmr update /src/components/order-management/PackerOverview.tsx, /src/index.css
+6:46:12 AM [vite] hmr update /src/components/order-management/PackerOverview.tsx, /src/index.css
+6:46:43 AM [vite] hmr update /src/components/order-management/PackerOverview.tsx, /src/index.css
+6:47:26 AM [vite] hmr update /src/components/order-management/OrderDetail.tsx, /src/index.css
+6:48:01 AM [vite] hmr update /src/components/order-management/PackerOverview.tsx, /src/index.css
+6:49:50 AM [vite] hmr update /src/contexts/OrderContext.tsx, /src/index.css
+6:49:50 AM [vite] hmr update /src/components/order-management/PackerOverview.tsx, /src/index.css
+6:49:50 AM [vite] hmr update /src/components/order-management/OrderDetail.tsx, /src/index.css
+6:49:52 AM [vite] hmr invalidate /src/contexts/OrderContext.tsx Could not Fast Refresh ("useOrders" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react-swc#consistent-components-exports
+6:49:52 AM [vite] hmr update /src/App.tsx, /src/index.css, /src/components/order-management/OrdersList.tsx, /src/components/order-management/OrderDetail.tsx, /src/components/order-management/AddNewOrder.tsx, /src/components/order-management/PackerOverview.tsx
+6:51:05 AM [vite] hmr update /src/contexts/OrderContext.tsx, /src/index.css
+6:51:05 AM [vite] hmr update /src/contexts/OrderContext.tsx, /src/index.css, /src/components/order-management/OrderDetail.tsx
+6:51:05 AM [vite] hmr update /src/components/order-management/OrderDetail.tsx, /src/index.css
+6:51:05 AM [vite] hmr update /src/components/order-management/PackerOverview.tsx, /src/index.css
+7:05:06 AM [vite] hmr update /src/components/order-management/PackerOverview.tsx, /src/index.css
+7:05:38 AM [vite] hmr update /src/components/order-management/PackerOverview.tsx, /src/index.css
+7:07:53 AM [vite] hmr update /src/components/order-management/PackerOverview.tsx, /src/index.css
+7:08:36 AM [vite] hmr update /src/components/order-management/PackerOverview.tsx, /src/index.css
+7:09:08 AM [vite] hmr update /src/components/order-management/PackerOverview.tsx, /src/index.css
+7:09:52 AM [vite] hmr update /src/components/order-management/PackerOverview.tsx, /src/index.css
+7:10:18 AM [vite] hmr update /src/components/order-management/PackerOverview.tsx, /src/index.css
+7:10:42 AM [vite] hmr update /src/components/order-management/PackerOverview.tsx, /src/index.css
+7:11:25 AM [vite] hmr update /src/components/order-management/OrderDetail.tsx, /src/index.css
+7:11:54 AM [vite] hmr update /src/components/order-management/OrderDetail.tsx, /src/index.css
+7:13:05 AM [vite] hmr update /src/components/order-management/OrderDetail.tsx, /src/index.css
+7:13:59 AM [vite] hmr update /src/components/order-management/OrderDetail.tsx, /src/index.css
+7:16:05 AM [vite] hmr update /src/components/order-management/PackerOverview.tsx, /src/index.css
+7:16:05 AM [vite] hmr update /src/components/order-management/OrderDetail.tsx, /src/index.css
+7:16:23 AM [vite] hmr update /src/components/order-management/PackerOverview.tsx, /src/index.css
+7:20:22 AM [vite] hmr update /src/components/order-management/PackerOverview.tsx, /src/index.css
+7:20:45 AM [vite] hmr update /src/components/order-management/PackerOverview.tsx, /src/index.css
+7:20:49 AM [vite] hmr update /src/components/order-management/PackerOverview.tsx, /src/index.css
+7:22:33 AM [vite] hmr update /src/components/order-management/PackerOverview.tsx, /src/index.css
+7:23:05 AM [vite] hmr update /src/components/order-management/PackerOverview.tsx, /src/index.css
+7:24:15 AM [vite] hmr update /src/components/order-management/PackerOverview.tsx, /src/index.css
+7:24:46 AM [vite] hmr update /src/components/order-management/PackerOverview.tsx, /src/index.css
+7:25:12 AM [vite] hmr update /src/components/order-management/PackerOverview.tsx, /src/index.css
+7:25:54 AM [vite] hmr update /src/components/order-management/PackerOverview.tsx, /src/index.css
+7:26:44 AM [vite] hmr update /src/components/order-management/PackerOverview.tsx, /src/index.css
+7:27:25 AM [vite] hmr update /src/components/order-management/PackerOverview.tsx, /src/index.css
+7:28:10 AM [vite] hmr update /src/components/order-management/PackerOverview.tsx, /src/index.css
+7:29:31 AM [vite] hmr update /src/components/order-management/PackerOverview.tsx, /src/index.css
+7:30:04 AM [vite] hmr update /src/components/order-management/PackerOverview.tsx, /src/index.css
+7:30:15 AM [vite] hmr update /src/components/order-management/PackerOverview.tsx, /src/index.css
+7:31:05 AM [vite] hmr update /src/components/order-management/PackerOverview.tsx, /src/index.css
+7:38:49 AM [vite] hmr update /src/contexts/OrderContext.tsx, /src/index.css
+7:39:19 AM [vite] hmr update /src/components/order-management/PackerOverview.tsx, /src/index.css
+7:39:52 AM [vite] hmr update /src/components/order-management/PackerOverview.tsx, /src/index.css
+7:41:07 AM [vite] hmr update /src/contexts/OrderContext.tsx, /src/index.css
+7:41:07 AM [vite] hmr update /src/components/order-management/PackerOverview.tsx, /src/index.css
+7:47:30 AM [vite] hmr update /src/contexts/OrderContext.tsx, /src/index.css
+7:47:38 AM [vite] hmr update /src/contexts/OrderContext.tsx, /src/index.css
+7:50:26 AM [vite] hmr update /src/contexts/OrderContext.tsx, /src/index.css
+7:50:55 AM [vite] hmr update /src/components/order-management/PackerOverview.tsx, /src/index.css
+7:51:35 AM [vite] hmr update /src/components/order-management/PackerOverview.tsx, /src/index.css
+7:53:45 AM [vite] hmr update /src/components/order-management/PackerOverview.tsx, /src/index.css
+7:54:49 AM [vite] hmr update /src/components/order-management/PackerOverview.tsx, /src/index.css
+7:55:54 AM [vite] hmr update /src/components/order-management/PackerOverview.tsx, /src/index.css
+7:56:26 AM [vite] hmr update /src/components/order-management/PackerOverview.tsx, /src/index.css
+7:57:10 AM [vite] hmr update /src/contexts/OrderContext.tsx, /src/index.css
+7:57:10 AM [vite] hmr update /src/components/order-management/PackerOverview.tsx, /src/index.css
+8:01:50 AM [vite] hmr update /src/contexts/OrderContext.tsx, /src/index.css, /src/components/order-management/OrderDetail.tsx
+8:02:16 AM [vite] hmr update /src/components/order-management/PackerOverview.tsx, /src/index.css
+8:02:49 AM [vite] hmr update /src/components/order-management/PackerOverview.tsx, /src/index.css
+8:05:40 AM [vite] hmr update /src/contexts/OrderContext.tsx, /src/index.css, /src/components/order-management/OrderDetail.tsx
+8:05:40 AM [vite] hmr update /src/components/order-management/PackerOverview.tsx, /src/index.css
+8:06:45 AM [vite] hmr update /src/contexts/OrderContext.tsx, /src/index.css
+8:06:45 AM [vite] hmr update /src/components/order-management/PackerOverview.tsx, /src/index.css
+Killed

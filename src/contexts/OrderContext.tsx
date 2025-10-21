@@ -7,6 +7,8 @@ interface OrderContextType {
   updateOrder: (id: string, updates: Partial<Order>) => void;
   deleteOrder: (id: string) => void;
   resetOrders: () => void;
+  updateOrderStatus: (id: string, status: Order['status'], packingStatus?: Order['packing_status']) => void;
+  simulateMobileAppUpdate: (orderId: string, mobileStatus: 'started' | 'completed' | 'out_of_stock') => void;
 }
 
 const OrderContext = createContext<OrderContextType | undefined>(undefined);
@@ -80,15 +82,57 @@ export const OrderProvider: React.FC<OrderProviderProps> = ({ children }) => {
       const now = new Date().toISOString();
       const orderNumber = `ORD-${Date.now()}`;
       
-      const newOrder: Order = {
+      // Smart auto-assignment logic - assign to packer with least pending orders
+      const availablePackers = [
+        { id: 'PKR-001', name: 'Ravi Kumar' },
+        { id: 'PKR-002', name: 'Priya Sharma' },
+        { id: 'PKR-003', name: 'Amit Verma' },
+        { id: 'PKR-004', name: 'Sneha Gupta' },
+        { id: 'PKR-005', name: 'Rajesh Patel' }
+      ];
+      
+      // Count pending orders for each packer
+      const packerWorkloads = availablePackers.map(packer => {
+        const pendingCount = orders.filter(order => 
+          order.assigned_packer_id === packer.id && 
+          (order.packing_status === 'pending' || order.packing_status === 'assigned')
+        ).length;
+        return { ...packer, pendingCount };
+      });
+      
+      // Sort by pending count (ascending) and select packer with least workload
+      const sortedPackers = packerWorkloads.sort((a, b) => a.pendingCount - b.pendingCount);
+      const selectedPacker = sortedPackers[0];
+      
+      // Always auto-assign for better workflow (can be made configurable later)
+      const shouldAutoAssign = true; // 100% auto-assignment for now
+      
+      // Ensure all required fields are present
+      const enrichedOrderData = {
         ...orderData,
+        // Ensure pincode is extracted from address if not provided
+        pincode: orderData.pincode || (orderData.address ? orderData.address.split(',').pop()?.trim() : 'N/A'),
+        // Ensure zone is set if not provided
+        zone: orderData.zone || 'Zone A',
+        // Ensure coordinates are set if not provided
+        lat: orderData.lat || 28.4595,
+        lng: orderData.lng || 77.0266,
+      };
+      
+      const newOrder: Order = {
+        ...enrichedOrderData,
         id: `ORD${Date.now()}`,
         order_number: orderNumber,
         created_at: now,
         updated_at: now,
+        packing_status: 'pending',
+        assigned_packer_id: shouldAutoAssign ? selectedPacker.id : undefined,
+        assigned_packer_name: shouldAutoAssign ? selectedPacker.name : undefined,
+        // Auto-assign status based on packer assignment
+        status: shouldAutoAssign ? 'Accepted' : 'Placed', // If auto-assigned, go to "In Process", otherwise stay "Order Placed"
       };
       
-      console.log('Created new order:', newOrder);
+      console.log('Created new order with auto-assignment:', newOrder);
 
       setOrders(prev => {
         // Add new order at the beginning, keep existing orders
@@ -136,8 +180,54 @@ export const OrderProvider: React.FC<OrderProviderProps> = ({ children }) => {
     setOrders(dummyOrders);
   };
 
+  const updateOrderStatus = (id: string, status: Order['status'], packingStatus?: Order['packing_status']) => {
+    const updates: Partial<Order> = { status };
+    if (packingStatus) {
+      updates.packing_status = packingStatus;
+    }
+    updateOrder(id, updates);
+    
+    // Show notification for out of stock
+    if (status === 'Out of Stock' as OrderStatus) {
+      const order = orders.find(o => o.id === id);
+      if (order) {
+        // This would trigger a notification in the UI
+        console.log(`🚨 OUT OF STOCK: Order ${order.order_number} - Product not available in warehouse`);
+      }
+    }
+  };
+
+  // Simulate mobile app order updates (for testing)
+  const simulateMobileAppUpdate = (orderId: string, mobileStatus: 'started' | 'completed' | 'out_of_stock') => {
+    const order = orders.find(o => o.id === orderId);
+    if (!order) return;
+
+    let newPackingStatus: Order['packing_status'];
+    let newOrderStatus: Order['status'];
+
+    switch (mobileStatus) {
+      case 'started':
+        newPackingStatus = 'in_process';
+        newOrderStatus = 'Accepted'; // In Process
+        break;
+      case 'completed':
+        newPackingStatus = 'packed';
+        newOrderStatus = 'Packed';
+        break;
+      case 'out_of_stock':
+        newPackingStatus = 'out_of_stock';
+        newOrderStatus = 'Out of Stock';
+        break;
+      default:
+        return;
+    }
+
+    updateOrderStatus(orderId, newOrderStatus, newPackingStatus);
+    console.log(`📱 Mobile App Update: Order ${order.order_number} - ${mobileStatus} → ${newPackingStatus}`);
+  };
+
   return (
-    <OrderContext.Provider value={{ orders, addOrder, updateOrder, deleteOrder, resetOrders }}>
+    <OrderContext.Provider value={{ orders, addOrder, updateOrder, deleteOrder, resetOrders, updateOrderStatus, simulateMobileAppUpdate }}>
       {children}
     </OrderContext.Provider>
   );

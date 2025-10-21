@@ -1,6 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 
-export type OrderStatus = 'Placed' | 'Accepted' | 'Packed' | 'Dispatched' | 'Delivered' | 'Cancelled' | 'Returned' | 'Failed';
+export type OrderStatus = 'Placed' | 'Accepted' | 'Packed' | 'Dispatched' | 'Delivered' | 'Cancelled' | 'Returned' | 'Failed' | 'Out of Stock';
 
 interface StatusBadgeProps {
   status: OrderStatus;
@@ -14,14 +14,30 @@ const statusConfig: Record<OrderStatus, { variant: "default" | "secondary" | "de
   'Delivered': { variant: "default", className: "bg-primary text-primary-foreground" },
   'Cancelled': { variant: "destructive", className: "" },
   'Returned': { variant: "outline", className: "bg-yellow-50 text-yellow-700 border-yellow-200" },
-  'Failed': { variant: "destructive", className: "" }
+  'Failed': { variant: "destructive", className: "" },
+  'Out of Stock': { variant: "destructive", className: "bg-red-50 text-red-700 border-red-200" }
+};
+
+const getDisplayText = (status: OrderStatus): string => {
+  switch (status) {
+    case 'Placed': return 'Order Placed';
+    case 'Accepted': return 'In Process';
+    case 'Packed': return 'Packed';
+    case 'Dispatched': return 'On The Way';
+    case 'Delivered': return 'Delivered';
+    case 'Cancelled': return 'Cancelled';
+    case 'Returned': return 'Returned';
+    case 'Failed': return 'Failed';
+    case 'Out of Stock': return 'Out of Stock';
+    default: return status;
+  }
 };
 
 export const StatusBadge = ({ status }: StatusBadgeProps) => {
   const config = statusConfig[status];
   return (
     <Badge variant={config.variant} className={config.className}>
-      {status}
+      {getDisplayText(status)}
     </Badge>
   );
 };

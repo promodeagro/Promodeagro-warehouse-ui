@@ -19,7 +19,7 @@ import { useState, useMemo } from "react";
 const OrderDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { orders } = useOrders();
+  const { orders, updateOrderStatus } = useOrders();
   const order = orders?.find(o => o.id === id);
   const { products, searchProducts: searchProductsContext } = useProducts();
 
@@ -36,7 +36,7 @@ const OrderDetail = () => {
   const [orderStatus, setOrderStatus] = useState(order?.status || 'Placed');
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
-  
+
   // Search and filter states
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
@@ -190,6 +190,28 @@ const OrderDetail = () => {
     return 'Pending';
   };
 
+  const getPackingStatusVariant = (status: string) => {
+    switch (status) {
+      case 'packed': return 'default';
+      case 'in_process': return 'secondary';
+      case 'assigned': return 'outline';
+      case 'pending': return 'secondary';
+      case 'out_of_stock': return 'destructive';
+      default: return 'secondary';
+    }
+  };
+
+  const getPackingStatusIcon = (status: string) => {
+    switch (status) {
+      case 'packed': return '✅';
+      case 'in_process': return '🔄';
+      case 'assigned': return '📋';
+      case 'pending': return '⏳';
+      case 'out_of_stock': return '🔴';
+      default: return '⏳';
+    }
+  };
+
   return (
     <div className="min-h-screen bg-muted/30">
       <header className="bg-card border-b sticky top-0 z-10 shadow-sm">
@@ -204,6 +226,18 @@ const OrderDetail = () => {
               <div>
                 <h1 className="text-2xl font-bold text-foreground">{order.order_number}</h1>
                 <p className="text-sm text-muted-foreground">Order Details</p>
+                {order.packing_status && (
+                  <div className="mt-2">
+                    <Badge variant={getPackingStatusVariant(order.packing_status)} className="text-xs">
+                      {getPackingStatusIcon(order.packing_status)} PACKING: {order.packing_status.replace('_', ' ').toUpperCase()}
+                    </Badge>
+                    {order.assigned_packer_name && (
+                      <span className="ml-2 text-xs text-muted-foreground">
+                        Assigned to: {order.assigned_packer_name}
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
             {/* Action buttons moved to header right */}
@@ -750,8 +784,13 @@ const OrderDetail = () => {
                   <User className="h-5 w-5" />
                   Customer Details
                 </CardTitle>
-                <div className="ml-6">
+                <div className="ml-6 flex gap-2">
                   <StatusBadge status={order.status} />
+                  {order.packing_status && (
+                    <Badge variant={getPackingStatusVariant(order.packing_status)}>
+                      {getPackingStatusIcon(order.packing_status)} {order.packing_status.replace('_', ' ').toUpperCase()}
+                    </Badge>
+                  )}
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -830,6 +869,26 @@ const OrderDetail = () => {
                     <p className="font-medium text-foreground">{order.payment_mode === 'Online' ? 'Prepaid' : 'COD'}</p>
                   </div>
                 </div>
+                {order.packing_status && (
+                  <div className="flex items-center gap-3">
+                    <Package className="h-5 w-5 text-muted-foreground" />
+                    <div className="flex-1">
+                      <p className="text-sm text-muted-foreground">Packing Status</p>
+                      <Badge variant={getPackingStatusVariant(order.packing_status)}>
+                        {getPackingStatusIcon(order.packing_status)} {order.packing_status.replace('_', ' ').toUpperCase()}
+                      </Badge>
+                    </div>
+                  </div>
+                )}
+                {order.assigned_packer_name && (
+                  <div className="flex items-center gap-3">
+                    <User className="h-5 w-5 text-muted-foreground" />
+                    <div className="flex-1">
+                      <p className="text-sm text-muted-foreground">Assigned Packer</p>
+                      <p className="font-medium text-foreground">{order.assigned_packer_name}</p>
+                    </div>
+                  </div>
+                )}
                 <div className="flex items-center gap-3">
                   <CreditCard className="h-5 w-5 text-muted-foreground" />
                   <div className="flex-1">

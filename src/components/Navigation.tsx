@@ -47,7 +47,8 @@ const navigationItems = [
     title: 'Order Management',
     icon: ShoppingCart,
     items: [
-      { title: 'Orders Details', href: '/order-management/orders', icon: FileText }
+      { title: 'Orders Details', href: '/order-management/orders', icon: FileText },
+      { title: 'Packer Overview', href: '/order-management/packer-overview', icon: PackageCheck }
     ]
   },
   {
@@ -131,7 +132,7 @@ export function Navigation() {
         </div>
       </div>
       
-      <nav className="flex-1 p-4 space-y-2">
+      <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
         {navigationItems.map((item, index) => (
           <div key={index}>
             {item.href ? (
@@ -230,7 +231,7 @@ export function Navigation() {
       </div>
 
       {/* Desktop Navigation */}
-      <div className="hidden lg:block w-80 h-screen border-r bg-card/50 backdrop-blur">
+      <div className="hidden lg:fixed lg:top-0 lg:left-0 lg:block w-[299px] h-screen border-r bg-card/50 backdrop-blur z-40">
         <NavContent />
       </div>
     </>

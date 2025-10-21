@@ -256,86 +256,80 @@ const OrdersList = () => {
   }
 
   return (
-    <div className="min-h-screen bg-muted/30">
-      <header className="bg-card border-b sticky top-0 z-10 shadow-sm">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Link to="/operations">
-                <Button variant="ghost" size="icon">
-                  <ArrowLeft className="h-5 w-5" />
-                </Button>
-              </Link>
-              <div>
-                <h1 className="text-2xl font-bold text-foreground">Orders</h1>
-                <p className="text-sm text-muted-foreground">{filteredOrders.length} orders found</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <Button variant="outline" className="flex items-center gap-2">
-                <Printer className="h-4 w-4" />
-                Multiple Print
-              </Button>
-              <Button 
-                variant="outline" 
-                className="flex items-center gap-2 text-orange-600 border-orange-200 hover:bg-orange-50"
-                onClick={resetOrders}
-              >
-                <XCircle className="h-4 w-4" />
-                Reset Orders
-              </Button>
-              <Button 
-                className="bg-success hover:bg-success/90"
-                onClick={() => navigate('/order-management/add-order')}
-              >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add New Order
-                  </Button>
-          </div>
+    <div className="space-y-6">
+      {/* Page header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold">Orders</h1>
+          <p className="text-sm text-muted-foreground">{filteredOrders.length} orders found</p>
         </div>
+        <div className="flex items-center gap-3">
+          <Button variant="outline" className="flex items-center gap-2">
+            <Printer className="h-4 w-4" />
+            Multiple Print
+          </Button>
+          <Button 
+            variant="outline" 
+            className="flex items-center gap-2 text-orange-600 border-orange-200 hover:bg-orange-50"
+            onClick={resetOrders}
+          >
+            <XCircle className="h-4 w-4" />
+            Reset Orders
+          </Button>
+          <Button 
+            className="bg-success hover:bg-success/90"
+            onClick={() => navigate('/order-management/add-order')}
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Add New Order
+          </Button>
         </div>
-      </header>
-
-      <main className="container mx-auto px-6 py-8">
-        {/* KPI Stats */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4 mb-6 sm:mb-8">
-          <Card className="bg-primary/5 border-primary/20">
-            <CardContent className="p-4">
-              <p className="text-xs text-muted-foreground mb-1">Total Orders</p>
-              <p className="text-2xl font-bold text-primary">{orderStats.total}</p>
-            </CardContent>
-          </Card>
-          <Card className="bg-blue-50 border-blue-200">
-            <CardContent className="p-4">
-              <p className="text-xs text-muted-foreground mb-1">Placed</p>
-              <p className="text-2xl font-bold text-blue-600">{orderStats.placed}</p>
-            </CardContent>
-          </Card>
-          <Card className="bg-cyan-50 border-cyan-200">
-            <CardContent className="p-4">
-              <p className="text-xs text-muted-foreground mb-1">Accepted</p>
-              <p className="text-2xl font-bold text-cyan-600">{orderStats.accepted}</p>
-            </CardContent>
-          </Card>
-          <Card className="bg-green-50 border-green-200">
-            <CardContent className="p-4">
-              <p className="text-xs text-muted-foreground mb-1">Delivered</p>
-              <p className="text-2xl font-bold text-green-600">{orderStats.delivered}</p>
-            </CardContent>
-          </Card>
-          <Card className="bg-red-50 border-red-200">
-            <CardContent className="p-4">
-              <p className="text-xs text-muted-foreground mb-1">Cancelled</p>
-              <p className="text-2xl font-bold text-red-600">{orderStats.cancelled}</p>
-            </CardContent>
-          </Card>
-          <Card className="bg-orange-50 border-orange-200">
-            <CardContent className="p-4">
-              <p className="text-xs text-muted-foreground mb-1">Returned</p>
-              <p className="text-2xl font-bold text-orange-600">{orderStats.returned}</p>
-            </CardContent>
-          </Card>
-        </div>
+      </div>
+      {/* Performance Overview */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
+        <Card>
+          <CardContent className="p-4 space-y-1">
+            <p className="text-sm text-muted-foreground">Total Orders</p>
+            <p className="text-3xl font-bold">{orderStats.total}</p>
+            <p className="text-xs text-muted-foreground">all orders</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 space-y-1">
+            <p className="text-sm text-muted-foreground">Placed</p>
+            <p className="text-3xl font-bold">{orderStats.placed}</p>
+            <p className="text-xs text-muted-foreground">new orders</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 space-y-1">
+            <p className="text-sm text-muted-foreground">Accepted</p>
+            <p className="text-3xl font-bold">{orderStats.accepted}</p>
+            <p className="text-xs text-muted-foreground">processing</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 space-y-1">
+            <p className="text-sm text-muted-foreground">Delivered</p>
+            <p className="text-3xl font-bold">{orderStats.delivered}</p>
+            <p className="text-xs text-muted-foreground">completed</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 space-y-1">
+            <p className="text-sm text-muted-foreground">Cancelled</p>
+            <p className="text-3xl font-bold">{orderStats.cancelled}</p>
+            <p className="text-xs text-muted-foreground">cancelled</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 space-y-1">
+            <p className="text-sm text-muted-foreground">Returned</p>
+            <p className="text-3xl font-bold">{orderStats.returned}</p>
+            <p className="text-xs text-muted-foreground">returned</p>
+          </CardContent>
+        </Card>
+      </div>
 
         <div className="mb-6 flex items-center gap-3">
           <Checkbox 
@@ -386,10 +380,11 @@ const OrdersList = () => {
                     <SelectContent>
                       <SelectItem value="all">All Status</SelectItem>
                       <SelectItem value="Placed">Order Placed</SelectItem>
-                      <SelectItem value="Accepted">Order Processing</SelectItem>
+                      <SelectItem value="Accepted">In Process</SelectItem>
                       <SelectItem value="Packed">Packed</SelectItem>
                       <SelectItem value="Dispatched">On The Way</SelectItem>
                       <SelectItem value="Delivered">Delivered</SelectItem>
+                      <SelectItem value="Out of Stock">Out of Stock</SelectItem>
                       <SelectItem value="Cancelled">Cancel Orders</SelectItem>
                       <SelectItem value="Returned">Undelivered</SelectItem>
                       <SelectItem value="Failed">Request for Cancellation</SelectItem>
@@ -622,7 +617,6 @@ const OrdersList = () => {
               </Card>
           )})}
         </div>
-      </main>
     </div>
   );
 };

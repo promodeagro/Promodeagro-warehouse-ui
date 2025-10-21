@@ -29,6 +29,7 @@ import { StaffManagement } from '@/components/warehouse/StaffManagement';
 import OrdersList from '@/components/order-management/OrdersList';
 import OrderDetail from '@/components/order-management/OrderDetail';
 import AddNewOrder from '@/components/order-management/AddNewOrder';
+import PackerOverview from '@/components/order-management/PackerOverview';
 
 // Create a query client
 const queryClient = new QueryClient({
@@ -51,7 +52,7 @@ function App() {
                 <Router>
             <div className="min-h-screen bg-gradient-background flex">
               <Navigation />
-              <main className="flex-1 overflow-auto">
+              <main className="flex-1 overflow-auto lg:ml-[299px]">
                 <div className="container mx-auto p-3 sm:p-4 md:p-6">
                   <Routes>
                   {/* Default route - redirect to operations overview */}
@@ -75,6 +76,7 @@ function App() {
                   <Route path="/order-management/orders" element={<OrdersList />} />
                   <Route path="/order-management/orders/:id" element={<OrderDetail />} />
                   <Route path="/order-management/add-order" element={<AddNewOrder />} />
+                  <Route path="/order-management/packer-overview" element={<PackerOverview />} />
                   
                   {/* Delivery Management */}
                   <Route path="/delivery/orders" element={<OrderDelivery />} />
