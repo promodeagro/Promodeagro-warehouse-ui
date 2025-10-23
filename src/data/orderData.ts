@@ -1,6 +1,6 @@
 // Order Management Data Types and Dummy Data
 
-export type OrderStatus = 'Placed' | 'Accepted' | 'Packed' | 'Dispatched' | 'Delivered' | 'Cancelled' | 'Returned' | 'Failed' | 'Out of Stock';
+export type OrderStatus = 'Placed' | 'Accepted' | 'Packed' | 'Dispatched' | 'Delivered' | 'Cancelled' | 'Returned' | 'Failed' | 'Out of Stock' | 'Items out of Stock' | 'Items No Stock';
 export type PaymentMode = 'COD' | 'Online';
 
 export interface OrderItem {
@@ -12,6 +12,7 @@ export interface OrderItem {
   subtotal: number;
   is_substituted: boolean;
   substituted_with?: string;
+  is_out_of_stock?: boolean;
 }
 
 export interface Order {
@@ -139,8 +140,8 @@ export const orders: Order[] = [
     updated_at: '2025-01-10T09:00:00Z',
     delivery_slot: 'morning',
     packing_status: 'pending',
-    assigned_packer_id: undefined,
-    assigned_packer_name: undefined,
+    assigned_packer_id: 'PKR-003',
+    assigned_packer_name: 'Meera Agarwal',
     pincode: '110075'
   },
   {
@@ -165,8 +166,8 @@ export const orders: Order[] = [
     updated_at: '2025-01-10T09:45:00Z',
     delivery_slot: 'evening',
     packing_status: 'pending',
-    assigned_packer_id: undefined,
-    assigned_packer_name: undefined,
+    assigned_packer_id: 'PKR-001',
+    assigned_packer_name: 'Ravi Kumar',
     pincode: '110024'
   },
   {
@@ -179,13 +180,14 @@ export const orders: Order[] = [
     lat: 28.4960,
     lng: 77.0950,
     zone: 'Zone B',
-    total_amount: 250,
+    total_amount: 185, // 90 + 60 + 35 = 185 (excluding out-of-stock item)
     payment_mode: 'Online',
     status: 'Out of Stock',
     items: [
-      { id: 'OI010', product_id: 'P001', product_name: 'Organic Tomatoes', quantity: 3, price: 45, subtotal: 135, is_substituted: false },
-      { id: 'OI011', product_id: 'P002', product_name: 'Fresh Potatoes', quantity: 2, price: 30, subtotal: 60, is_substituted: false },
-      { id: 'OI012', product_id: 'P003', product_name: 'Red Onions', quantity: 1, price: 35, subtotal: 35, is_substituted: false },
+      { id: 'OI010', product_id: 'P001', product_name: 'Organic Tomatoes', quantity: 2, price: 45, subtotal: 90, is_substituted: false, is_out_of_stock: false },
+      { id: 'OI011', product_id: 'P002', product_name: 'Fresh Potatoes', quantity: 2, price: 30, subtotal: 60, is_substituted: false, is_out_of_stock: false },
+      { id: 'OI012', product_id: 'P003', product_name: 'Red Onions', quantity: 1, price: 35, subtotal: 35, is_substituted: false, is_out_of_stock: false },
+      { id: 'OI013', product_id: 'P004', product_name: 'Orange Carrots', quantity: 2, price: 40, subtotal: 80, is_substituted: false, is_out_of_stock: true },
     ],
     created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2 hours ago
     updated_at: new Date(Date.now() - 30 * 60 * 1000).toISOString(), // 30 minutes ago

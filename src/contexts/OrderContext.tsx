@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Order, OrderItem, OrderStatus, PaymentMode, orders as dummyOrders } from '@/data/orderData';
+import { useNotifications } from './NotificationContext';
 
 interface OrderContextType {
   orders: Order[];
@@ -27,6 +28,7 @@ interface OrderProviderProps {
 
 export const OrderProvider: React.FC<OrderProviderProps> = ({ children }) => {
   const [orders, setOrders] = useState<Order[]>(dummyOrders);
+  const { addNotification } = useNotifications();
 
   // Utility function to remove duplicates based on order ID
   const removeDuplicates = (ordersList: Order[]): Order[] => {
@@ -125,11 +127,11 @@ export const OrderProvider: React.FC<OrderProviderProps> = ({ children }) => {
         order_number: orderNumber,
         created_at: now,
         updated_at: now,
-        packing_status: 'pending',
+        packing_status: shouldAutoAssign ? 'assigned' : 'pending', // If auto-assigned, set to "assigned", otherwise "pending"
         assigned_packer_id: shouldAutoAssign ? selectedPacker.id : undefined,
         assigned_packer_name: shouldAutoAssign ? selectedPacker.name : undefined,
         // Auto-assign status based on packer assignment
-        status: shouldAutoAssign ? 'Accepted' : 'Placed', // If auto-assigned, go to "In Process", otherwise stay "Order Placed"
+        status: shouldAutoAssign ? 'Accepted' : 'Placed', // If auto-assigned, go to "Accepted", otherwise stay "Placed"
       };
       
       console.log('Created new order with auto-assignment:', newOrder);
@@ -141,6 +143,16 @@ export const OrderProvider: React.FC<OrderProviderProps> = ({ children }) => {
         const uniqueOrders = removeDuplicates(newOrders);
         const savedOrders = uniqueOrders.filter(order => !dummyOrders.some(dummy => dummy.id === order.id));
         localStorage.setItem('warehouse-orders', JSON.stringify(savedOrders));
+        
+        // Send notification for new order
+        addNotification({
+          type: 'new_order',
+          title: 'New Order Created',
+          message: `Order ${orderNumber} has been created and auto-assigned to ${selectedPacker.name}`,
+          priority: 'medium',
+          orderId: newOrder.id
+        });
+        
         return uniqueOrders;
       });
       return newOrder;
@@ -207,8 +219,8 @@ export const OrderProvider: React.FC<OrderProviderProps> = ({ children }) => {
 
     switch (mobileStatus) {
       case 'started':
-        newPackingStatus = 'in_process';
-        newOrderStatus = 'Accepted'; // In Process
+        newPackingStatus = 'pending';
+        newOrderStatus = 'Placed'; // Pending
         break;
       case 'completed':
         newPackingStatus = 'packed';
@@ -216,7 +228,7 @@ export const OrderProvider: React.FC<OrderProviderProps> = ({ children }) => {
         break;
       case 'out_of_stock':
         newPackingStatus = 'out_of_stock';
-        newOrderStatus = 'Out of Stock';
+        newOrderStatus = 'Items No Stock';
         break;
       default:
         return;
@@ -224,6 +236,33 @@ export const OrderProvider: React.FC<OrderProviderProps> = ({ children }) => {
 
     updateOrderStatus(orderId, newOrderStatus, newPackingStatus);
     console.log(`📱 Mobile App Update: Order ${order.order_number} - ${mobileStatus} → ${newPackingStatus}`);
+    
+    // Send notification for mobile app updates
+    let notificationTitle = '';
+    let notificationMessage = '';
+    
+    switch (mobileStatus) {
+      case 'started':
+        notificationTitle = 'Order Started';
+        notificationMessage = `Order ${order.order_number} has been started by ${order.assigned_packer_name || 'packer'}`;
+        break;
+      case 'completed':
+        notificationTitle = 'Order Completed';
+        notificationMessage = `Order ${order.order_number} has been completed by ${order.assigned_packer_name || 'packer'}`;
+        break;
+      case 'out_of_stock':
+        notificationTitle = 'Items No Stock';
+        notificationMessage = `Order ${order.order_number} - Some items are out of stock. Please check and adjust.`;
+        break;
+    }
+    
+    addNotification({
+      type: 'order_update',
+      title: notificationTitle,
+      message: notificationMessage,
+      priority: mobileStatus === 'out_of_stock' ? 'high' : 'medium',
+      orderId: orderId
+    });
   };
 
   return (

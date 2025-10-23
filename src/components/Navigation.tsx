@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useSearchParams } from 'react-router-dom';
 import { 
   Package, 
   Truck, 
@@ -95,13 +95,61 @@ export function Navigation() {
   const [isOpen, setIsOpen] = useState(false);
   const [openDropdowns, setOpenDropdowns] = useState<Set<string>>(new Set());
   const location = useLocation();
+  const [searchParams] = useSearchParams();
 
   const isActive = (href: string) => {
-    return location.pathname === href;
+    // Handle exact matches
+    if (location.pathname === href) {
+      return true;
+    }
+    
+    // Handle nested routes for order management with context awareness
+    if (location.pathname.startsWith('/order-management/orders/')) {
+      const from = searchParams.get('from');
+      
+      // If came from packer overview, show packer overview as active
+      if (from === 'packer-overview' && href === '/order-management/packer-overview') {
+        return true;
+      }
+      
+      // If came from packer overview, don't show orders details as active
+      if (from === 'packer-overview' && href === '/order-management/orders') {
+        return false;
+      }
+      
+      // If came from orders details or no context, show orders details as active
+      if (href === '/order-management/orders') {
+        return true;
+      }
+    }
+    
+    return false;
   };
 
   const isParentActive = (items: any[]) => {
-    return items.some(item => location.pathname === item.href);
+    return items.some(item => {
+      // Handle exact matches
+      if (location.pathname === item.href) {
+        return true;
+      }
+      
+      // Handle nested routes for order management with context awareness
+      if (location.pathname.startsWith('/order-management/orders/')) {
+        const from = searchParams.get('from');
+        
+        // If came from packer overview, show packer overview as active
+        if (from === 'packer-overview' && item.href === '/order-management/packer-overview') {
+          return true;
+        }
+        
+        // If came from orders details or no context, show orders details as active
+        if (item.href === '/order-management/orders') {
+          return true;
+        }
+      }
+      
+      return false;
+    });
   };
 
   const toggleDropdown = (title: string) => {

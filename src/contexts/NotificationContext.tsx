@@ -163,7 +163,7 @@ export const useNotifications = () => {
 
 // Notification Bell Component
 export const NotificationBell = () => {
-  const { unreadCount, notifications, markAsRead, removeNotification } = useNotifications();
+  const { unreadCount, notifications, markAsRead, removeNotification, clearAllNotifications } = useNotifications();
   const [isOpen, setIsOpen] = useState(false);
 
   const getNotificationIcon = (type: string) => {
@@ -217,13 +217,25 @@ export const NotificationBell = () => {
           <div className="p-4 border-b">
             <div className="flex items-center justify-between">
               <h3 className="font-semibold">Notifications</h3>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setIsOpen(false)}
-              >
-                <X className="h-4 w-4" />
-              </Button>
+              <div className="flex items-center gap-2">
+                {notifications.length > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={clearAllNotifications}
+                    className="text-xs text-gray-500 hover:text-gray-700"
+                  >
+                    Clear All
+                  </Button>
+                )}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsOpen(false)}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           </div>
           

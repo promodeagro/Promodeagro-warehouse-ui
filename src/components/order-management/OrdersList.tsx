@@ -331,66 +331,66 @@ const OrdersList = () => {
         </Card>
       </div>
 
-        <div className="mb-6 flex items-center gap-3">
-          <Checkbox 
-            id="select-all"
-            checked={selectedOrders.size === filteredOrders.length && filteredOrders.length > 0}
-            onCheckedChange={handleSelectAll}
-          />
-          <label htmlFor="select-all" className="text-sm font-medium text-foreground cursor-pointer">
-            Total Selected Items: {selectedOrders.size}
-          </label>
+      <div className="mb-6 flex items-center gap-3">
+        <Checkbox 
+          id="select-all"
+          checked={selectedOrders.size === filteredOrders.length && filteredOrders.length > 0}
+          onCheckedChange={handleSelectAll}
+        />
+        <label htmlFor="select-all" className="text-sm font-medium text-foreground cursor-pointer">
+          Total Selected Items: {selectedOrders.size}
+        </label>
+      </div>
+
+      <div className="mb-6 space-y-4">
+        {/* Search Bar */}
+        <div className="flex gap-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search by order number or customer name..."
+              className="pl-10"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <Button
+            variant="outline"
+            onClick={() => setShowFilters(!showFilters)}
+            className="flex items-center gap-2 min-w-[120px]"
+          >
+            <Filter className="h-4 w-4" />
+            Filters
+            {showFilters ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+          </Button>
         </div>
 
-        <div className="mb-6 space-y-4">
-          {/* Search Bar */}
-          <div className="flex gap-3">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search by order number or customer name..."
-                className="pl-10"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-            <Button
-              variant="outline"
-              onClick={() => setShowFilters(!showFilters)}
-              className="flex items-center gap-2 min-w-[120px]"
-            >
-              <Filter className="h-4 w-4" />
-              Filters
-              {showFilters ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-            </Button>
-          </div>
-
-          {/* Enhanced Filter Section */}
-          {showFilters && (
-            <Card className="animate-fade-in">
-              <CardContent className="p-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
-                  {/* Order Status Filter */}
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-muted-foreground">Order Status</label>
+        {/* Enhanced Filter Section */}
+        {showFilters && (
+          <Card className="animate-fade-in">
+            <CardContent className="p-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
+                {/* Order Status Filter */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-muted-foreground">Order Status</label>
                   <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as any)}>
-                      <SelectTrigger className="h-10">
+                    <SelectTrigger className="h-10">
                       <SelectValue placeholder="All Status" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All Status</SelectItem>
                       <SelectItem value="Placed">Order Placed</SelectItem>
-                      <SelectItem value="Accepted">In Process</SelectItem>
+                      <SelectItem value="Accepted">Order In Process</SelectItem>
                       <SelectItem value="Packed">Packed</SelectItem>
                       <SelectItem value="Dispatched">On The Way</SelectItem>
                       <SelectItem value="Delivered">Delivered</SelectItem>
-                      <SelectItem value="Out of Stock">Out of Stock</SelectItem>
-                      <SelectItem value="Cancelled">Cancel Orders</SelectItem>
-                      <SelectItem value="Returned">Undelivered</SelectItem>
-                      <SelectItem value="Failed">Request for Cancellation</SelectItem>
+                      <SelectItem value="Items No Stock">Items No Stock</SelectItem>
+                      <SelectItem value="Failed">Undelivered</SelectItem>
+                      <SelectItem value="Returned">Request for Cancellation</SelectItem>
+                      <SelectItem value="Cancelled">Cancel Order</SelectItem>
                     </SelectContent>
                   </Select>
-                  </div>
+                </div>
 
                   {/* Payment Type Filter */}
                   <div className="space-y-2">

@@ -3,25 +3,40 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { riders } from "@/data/orderData";
 import { useProducts } from "@/contexts/ProductContext";
 import { useOrders } from "@/contexts/OrderContext";
+import { useNotifications } from "@/contexts/NotificationContext";
 import { ArrowLeft, Phone, MapPin, Clock, CreditCard, Package, User, Trash2, Plus, Printer, X, RotateCcw, Calendar, Search } from "lucide-react";
-import { Link, useParams, useNavigate } from "react-router-dom";
+import { Link, useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
-import { toast } from "sonner";
 import { useState, useMemo } from "react";
 
 const OrderDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { orders, updateOrderStatus } = useOrders();
   const order = orders?.find(o => o.id === id);
   const { products, searchProducts: searchProductsContext } = useProducts();
+
+  // Handle context-aware back navigation
+  const handleBackNavigation = () => {
+    const from = searchParams.get('from');
+    
+    if (from === 'packer-overview') {
+      // If came from packer overview, go back to packer overview
+      navigate('/order-management/packer-overview');
+    } else {
+      // Default: go back to orders list
+      navigate('/order-management/orders');
+    }
+  };
 
   // Add loading state while orders are being fetched
   if (!orders) {
@@ -36,6 +51,20 @@ const OrderDetail = () => {
   const [orderStatus, setOrderStatus] = useState(order?.status || 'Placed');
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
+  // Auto-save functionality - no need for hasUnsavedChanges state
+  const { updateOrder } = useOrders();
+  const { addNotification } = useNotifications();
+
+  // Auto-save function that updates the order in context
+  const autoSaveOrder = () => {
+    if (order) {
+      updateOrder(order.id, {
+        items: orderItems,
+        total_amount: subtotal + shippingCharges - discountAmount,
+        updated_at: new Date().toISOString()
+      });
+    }
+  };
 
   // Search and filter states
   const [searchTerm, setSearchTerm] = useState("");
@@ -50,7 +79,10 @@ const OrderDetail = () => {
     const item = orderItems.find(i => i.id === itemId);
     if (item) {
       setRemovedItems([...removedItems, item]);
-      setOrderItems(orderItems.filter(i => i.id !== itemId));
+      const newOrderItems = orderItems.filter(i => i.id !== itemId);
+      setOrderItems(newOrderItems);
+      // Auto-save immediately
+      setTimeout(() => autoSaveOrder(), 0);
     }
   };
 
@@ -109,7 +141,10 @@ const OrderDetail = () => {
       return null;
     }).filter(item => item !== null);
     
-    setOrderItems([...orderItems, ...newItems as any]);
+    const updatedOrderItems = [...orderItems, ...newItems as any];
+    setOrderItems(updatedOrderItems);
+    // Auto-save immediately
+    setTimeout(() => autoSaveOrder(), 0);
     setShowAddItemDialog(false);
     setSelectedProducts({});
     setSearchTerm("");
@@ -120,13 +155,38 @@ const OrderDetail = () => {
   const handleRestoreItem = (itemId: string) => {
     const item = removedItems.find(i => i.id === itemId);
     if (item) {
-      setOrderItems([...orderItems, item]);
+      const updatedOrderItems = [...orderItems, item];
+      setOrderItems(updatedOrderItems);
       setRemovedItems(removedItems.filter(i => i.id !== itemId));
+      // Auto-save immediately
+      setTimeout(() => autoSaveOrder(), 0);
     }
   };
 
   const handleDeleteRemovedItem = (itemId: string) => {
     setRemovedItems(removedItems.filter(i => i.id !== itemId));
+  };
+
+  // Revert out-of-stock item back to in-stock
+  const handleRevertOutOfStock = (itemId: string) => {
+    const updatedOrderItems = orderItems.map(item => 
+      item.id === itemId 
+        ? { ...item, is_out_of_stock: false }
+        : item
+    );
+    setOrderItems(updatedOrderItems);
+    // Auto-save immediately
+    setTimeout(() => autoSaveOrder(), 0);
+    toast.success('Item reverted to in-stock status');
+  };
+
+  // Permanently delete out-of-stock item
+  const handleDeleteOutOfStock = (itemId: string) => {
+    const updatedOrderItems = orderItems.filter(item => item.id !== itemId);
+    setOrderItems(updatedOrderItems);
+    // Auto-save immediately
+    setTimeout(() => autoSaveOrder(), 0);
+    toast.success('Item permanently removed from order');
   };
 
   const handleApplyDiscount = () => {
@@ -156,6 +216,40 @@ const OrderDetail = () => {
     toast.success('Printing bill...');
   };
 
+  const handleResumeOrder = () => {
+    if (!order) return;
+    
+    // Resume order - change status back to pending and assign to same packer
+    setOrderStatus('Placed');
+    
+    // Update order in context to change packing status from 'out_of_stock' to 'pending'
+    // This will move the order from "Items No Stock" tab to "Pending" tab
+    updateOrderStatus(order.id, 'Placed', 'pending');
+    
+    // Also update the order items and total in context to ensure consistency
+    updateOrder(order.id, {
+      items: orderItems,
+      total_amount: subtotal + shippingCharges - discountAmount,
+      status: 'Placed',
+      packing_status: 'pending',
+      updated_at: new Date().toISOString()
+    });
+    
+    toast.success(`Order resumed successfully - assigned back to ${order.assigned_packer_name || 'packer'}`);
+    
+    // Send notification to packer
+    addNotification({
+      type: 'order_update',
+      title: 'Order Resumed',
+      message: `Order ${order.order_number} has been resumed and assigned back to ${order.assigned_packer_name || 'packer'}. Please continue packing.`,
+      priority: 'high',
+      orderId: order.id
+    });
+    
+    // Navigate back to Packer Overview screen
+    navigate('/order-management/packer-overview');
+  };
+
   const getProductUnit = (productName: string) => {
     const mockProducts = [
       { name: 'Organic Tomatoes', unit: 'kg' },
@@ -171,7 +265,10 @@ const OrderDetail = () => {
     return product?.unit || 'unit';
   };
 
-  const subtotal = orderItems.reduce((sum, item) => sum + item.subtotal, 0);
+  // Calculate subtotal excluding out-of-stock items
+  const subtotal = orderItems
+    .filter(item => !item.is_out_of_stock)
+    .reduce((sum, item) => sum + item.subtotal, 0);
   const [shippingCharges, setShippingCharges] = useState<number>(order?.shipping_charges || 0);
   const [showShippingDialog, setShowShippingDialog] = useState(false);
   const [addShipping, setAddShipping] = useState<string>('0');
@@ -193,7 +290,6 @@ const OrderDetail = () => {
   const getPackingStatusVariant = (status: string) => {
     switch (status) {
       case 'packed': return 'default';
-      case 'in_process': return 'secondary';
       case 'assigned': return 'outline';
       case 'pending': return 'secondary';
       case 'out_of_stock': return 'destructive';
@@ -204,7 +300,6 @@ const OrderDetail = () => {
   const getPackingStatusIcon = (status: string) => {
     switch (status) {
       case 'packed': return '✅';
-      case 'in_process': return '🔄';
       case 'assigned': return '📋';
       case 'pending': return '⏳';
       case 'out_of_stock': return '🔴';
@@ -218,44 +313,41 @@ const OrderDetail = () => {
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <Link to="/order-management/orders">
-                <Button variant="ghost" size="icon">
-                  <ArrowLeft className="h-5 w-5" />
-                </Button>
-              </Link>
+              <Button variant="ghost" size="icon" onClick={handleBackNavigation}>
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
               <div>
                 <h1 className="text-2xl font-bold text-foreground">{order.order_number}</h1>
                 <p className="text-sm text-muted-foreground">Order Details</p>
-                {order.packing_status && (
-                  <div className="mt-2">
-                    <Badge variant={getPackingStatusVariant(order.packing_status)} className="text-xs">
-                      {getPackingStatusIcon(order.packing_status)} PACKING: {order.packing_status.replace('_', ' ').toUpperCase()}
-                    </Badge>
-                    {order.assigned_packer_name && (
-                      <span className="ml-2 text-xs text-muted-foreground">
-                        Assigned to: {order.assigned_packer_name}
-                      </span>
-                    )}
-                  </div>
-                )}
               </div>
             </div>
             {/* Action buttons moved to header right */}
             <div className="flex items-center gap-5">
-              <Dialog open={showCancelDialog} onOpenChange={(open) => { setShowCancelDialog(open); if (!open) setCancelReason(''); }}>
-              <DialogTrigger asChild>
-                {orderStatus === 'Cancelled' ? (
-                    <Button variant="outline" className="hover:bg-success/10" onClick={() => setShowCancelDialog(true)}>
-                    <RotateCcw className="h-4 w-4 mr-2" />
-                    Re Attempt
-                  </Button>
-                ) : (
-                    <Button variant="outline" className="text-red-800 border-red-800 border-[1.5px] font-semibold hover:bg-transparent hover:text-red-800">
-                    Cancel Order
-                  </Button>
-                )}
-              </DialogTrigger>
-              <DialogContent>
+              {/* Show different buttons for Items No Stock orders */}
+              {order.packing_status === 'out_of_stock' ? (
+                <Button 
+                  variant="outline" 
+                  onClick={() => handleResumeOrder()}
+                  className="font-semibold"
+                >
+                  <RotateCcw className="h-4 w-4 mr-2" />
+                  Resume Order
+                </Button>
+              ) : (
+                <Dialog open={showCancelDialog} onOpenChange={(open) => { setShowCancelDialog(open); if (!open) setCancelReason(''); }}>
+                <DialogTrigger asChild>
+                  {orderStatus === 'Cancelled' ? (
+                      <Button variant="outline" className="hover:bg-success/10" onClick={() => setShowCancelDialog(true)}>
+                      <RotateCcw className="h-4 w-4 mr-2" />
+                      Re Attempt
+                    </Button>
+                  ) : (
+                      <Button variant="outline" className="text-red-800 border-red-800 border-[1.5px] font-semibold hover:bg-transparent hover:text-red-800">
+                      Cancel Order
+                    </Button>
+                  )}
+                </DialogTrigger>
+                <DialogContent>
                 <DialogHeader>
                   <DialogTitle>
                     {orderStatus === 'Cancelled' ? 'Confirm Action' : 'Order Cancel Reason'}
@@ -322,8 +414,9 @@ const OrderDetail = () => {
                 </div>
               </DialogContent>
             </Dialog>
+              )}
             <Button 
-                variant="default"
+              variant="default"
               onClick={handlePrintBill}
             >
               <Printer className="h-4 w-4 mr-2" />
@@ -388,7 +481,7 @@ const OrderDetail = () => {
                               <SelectItem value="all">All Status</SelectItem>
                               <SelectItem value="active">Active</SelectItem>
                               <SelectItem value="low-stock">Low Stock</SelectItem>
-                              <SelectItem value="out-of-stock">Out of Stock</SelectItem>
+                              <SelectItem value="out-of-stock">Items No Stock</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
@@ -537,7 +630,8 @@ const OrderDetail = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {orderItems.map((item) => (
+                  {/* In-Stock Items */}
+                  {orderItems.filter(item => !item.is_out_of_stock).map((item) => (
                     <div key={item.id} className="flex items-center justify-between p-4 rounded-lg border">
                       <div className="flex items-center gap-4 flex-1">
                         <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center">
@@ -562,6 +656,51 @@ const OrderDetail = () => {
                       </div>
                     </div>
                   ))}
+                  
+                  {/* Out of Stock Items - Only show if order has Items No Stock status */}
+                  {order.packing_status === 'out_of_stock' && orderItems.filter(item => item.is_out_of_stock).length > 0 && (
+                    <div className="space-y-3">
+                      <h4 className="font-bold text-red-600 text-base">Out Of Stock</h4>
+                      {orderItems.filter(item => item.is_out_of_stock).map((item) => (
+                        <div key={item.id} className="flex items-center justify-between p-4 rounded-lg border border-red-200 bg-red-50">
+                          <div className="flex items-center gap-4 flex-1">
+                            <div className="w-12 h-12 rounded-lg bg-red-100 flex items-center justify-center">
+                              <Package className="h-6 w-6 text-red-600" />
+                            </div>
+                            <div className="flex-1">
+                              <p className="font-medium text-red-800">{item.product_name}</p>
+                              <p className="text-sm text-red-600">
+                                Qty: {item.quantity} • {item.quantity * 500}{getProductUnit(item.product_name)} • ₹{item.price} each
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-4">
+                            <span className="px-3 py-1 bg-red-600 text-white text-xs font-medium rounded-full">
+                              Out Of Stock
+                            </span>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleRevertOutOfStock(item.id)}
+                              className="h-8 w-8 text-red-600 hover:bg-red-100"
+                              title="Revert to in-stock"
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleDeleteOutOfStock(item.id)}
+                              className="h-8 w-8 text-red-600 hover:bg-red-100"
+                              title="Permanently delete"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
 
                   {removedItems.length > 0 && (
                     <div className="mt-6 pt-6 border-t">
@@ -784,13 +923,58 @@ const OrderDetail = () => {
                   <User className="h-5 w-5" />
                   Customer Details
                 </CardTitle>
-                <div className="ml-6 flex gap-2">
-                  <StatusBadge status={order.status} />
-                  {order.packing_status && (
-                    <Badge variant={getPackingStatusVariant(order.packing_status)}>
-                      {getPackingStatusIcon(order.packing_status)} {order.packing_status.replace('_', ' ').toUpperCase()}
-                    </Badge>
-                  )}
+                <div className="ml-6 flex flex-col items-end">
+                  {(() => {
+                    // Dynamic status logic
+                    if (order.status === 'Delivered') {
+                      return (
+                        <>
+                          <Badge variant="default" className="bg-green-100 text-green-700">Delivered</Badge>
+                        </>
+                      );
+                    } else if (order.status === 'Dispatched') {
+                      return (
+                        <>
+                          <Badge variant="outline" className="bg-blue-100 text-blue-700">On the way</Badge>
+                          <span className="text-xs text-muted-foreground mt-1">To {order.assigned_packer_name || 'Packer'}</span>
+                        </>
+                      );
+                    } else if (order.packing_status === 'assigned') {
+                      return (
+                        <>
+                          <Badge variant="outline" className="bg-purple-100 text-purple-700">Assigned</Badge>
+                          <span className="text-xs text-muted-foreground mt-1">To {order.assigned_packer_name || 'Packer'}</span>
+                        </>
+                      );
+                    } else if (order.packing_status === 'pending') {
+                      return (
+                        <>
+                          <Badge variant="outline" className="bg-orange-100 text-orange-700">Pending</Badge>
+                          <span className="text-xs text-muted-foreground mt-1">To {order.assigned_packer_name || 'Packer'}</span>
+                        </>
+                      );
+                    } else if (order.packing_status === 'packed') {
+                      return (
+                        <>
+                          <Badge variant="outline" className="bg-green-100 text-green-700">Packed</Badge>
+                          <span className="text-xs text-muted-foreground mt-1">To {order.assigned_packer_name || 'Packer'}</span>
+                        </>
+                      );
+                    } else if (order.packing_status === 'out_of_stock') {
+                      return (
+                        <>
+                          <Badge variant="destructive" className="bg-red-100 text-red-700">Items No Stock</Badge>
+                          <span className="text-xs text-muted-foreground mt-1">To {order.assigned_packer_name || 'Packer'}</span>
+                        </>
+                      );
+                    } else {
+                      return (
+                        <>
+                          <Badge variant="outline" className="bg-blue-100 text-blue-700">Order Placed</Badge>
+                        </>
+                      );
+                    }
+                  })()}
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -875,7 +1059,7 @@ const OrderDetail = () => {
                     <div className="flex-1">
                       <p className="text-sm text-muted-foreground">Packing Status</p>
                       <Badge variant={getPackingStatusVariant(order.packing_status)}>
-                        {getPackingStatusIcon(order.packing_status)} {order.packing_status.replace('_', ' ').toUpperCase()}
+                        {getPackingStatusIcon(order.packing_status)} {order.packing_status === 'out_of_stock' ? 'ITEMS NO STOCK' : order.packing_status.replace('_', ' ').toUpperCase()}
                       </Badge>
                     </div>
                   </div>
