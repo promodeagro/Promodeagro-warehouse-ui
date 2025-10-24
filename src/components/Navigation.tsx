@@ -16,7 +16,15 @@ import {
   ShoppingCart,
   FileText,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  Calculator,
+  Receipt,
+  CreditCard,
+  TrendingDown,
+  BookOpen,
+  FileSpreadsheet,
+  BarChart,
+  MapPin
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -36,6 +44,7 @@ const navigationItems = [
     items: [
       { title: 'Products', href: '/inventory/products', icon: Package },
       { title: 'Categories', href: '/inventory/categories', icon: Package },
+      { title: 'Stock Adjustment', href: '/stock-adjustment', icon: BarChart },
       // Temporarily commented out per request — enable later when needed
       // { title: 'Tasks', href: '/inventory/tasks', icon: ClipboardList },
       // { title: 'Receiving', href: '/inventory/receiving', icon: PackageCheck },
@@ -48,7 +57,8 @@ const navigationItems = [
     icon: ShoppingCart,
     items: [
       { title: 'Orders Details', href: '/order-management/orders', icon: FileText },
-      { title: 'Packer Overview', href: '/order-management/packer-overview', icon: PackageCheck }
+      { title: 'Packer Overview', href: '/order-management/packer-overview', icon: PackageCheck },
+      { title: 'Pincodes', href: '/pincodes', icon: MapPin }
     ]
   },
   {
@@ -58,6 +68,23 @@ const navigationItems = [
       { title: 'Orders', href: '/delivery/orders', icon: ClipboardList },
       { title: 'History', href: '/delivery/history', icon: BarChart3 },
       { title: 'Runsheets', href: '/delivery/runsheets', icon: ClipboardList }
+    ]
+  },
+  {
+    title: 'Accounts',
+    icon: Calculator,
+    items: [
+      { title: 'Dashboard', href: '/accounts/dashboard', icon: BarChart },
+      { title: 'Sales', href: '/accounts/sales', icon: TrendingUp },
+      { title: 'Cart Sales', href: '/accounts/cart-sales', icon: ShoppingCart },
+      { title: 'Purchases', href: '/accounts/purchases', icon: Receipt },
+      { title: 'Expenses', href: '/accounts/expenses', icon: TrendingDown },
+      { title: 'Other Income', href: '/accounts/other-income', icon: CreditCard },
+      { title: 'Chart of Accounts', href: '/accounts/chart-of-accounts', icon: BookOpen },
+      { title: 'Journal Entries', href: '/accounts/journal-entries', icon: FileText },
+      { title: 'Reports', href: '/accounts/reports', icon: FileSpreadsheet },
+      { title: 'Customers', href: '/accounts/customers', icon: Users },
+      { title: 'Analytics', href: '/accounts/analytics', icon: BarChart3 }
     ]
   }
   // COMMENTED OUT FOR FUTURE USE - Uncomment when needed
