@@ -4,14 +4,22 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
+lerna-debug.log*
 
 # Build outputs
 dist/
 build/
 out/
+.next/
+.nuxt/
+.output/
+.vite/
+.vercel/
 
 # Environment variables
 .env
+.env.*
+!.env.example
 .env.local
 .env.development.local
 .env.test.local
@@ -21,6 +29,8 @@ out/
 *.log
 logs/
 dev.log
+error.log
+access.log
 
 # Runtime data
 pids/
@@ -31,15 +41,18 @@ pids/
 # Coverage directory used by tools like istanbul
 coverage/
 *.lcov
-
-# nyc test coverage
-.nyc_output
+.nyc_output/
 
 # Dependency directories
 jspm_packages/
 
 # Optional npm cache directory
 .npm
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.*
 
 # Optional eslint cache
 .eslintcache
@@ -63,17 +76,6 @@ jspm_packages/
 .cache
 .parcel-cache
 
-# Next.js build output
-.next
-
-# Nuxt.js build / generate output
-.nuxt
-dist
-
-# Gatsby files
-.cache/
-public
-
 # Storybook build outputs
 .out
 .storybook-out
@@ -81,6 +83,7 @@ public
 # Temporary folders
 tmp/
 temp/
+.tmp/
 
 # Editor directories and files
 .vscode/
@@ -88,6 +91,9 @@ temp/
 *.swp
 *.swo
 *~
+.project
+.settings/
+.classpath
 
 # OS generated files
 .DS_Store
@@ -97,23 +103,77 @@ temp/
 .Trashes
 ehthumbs.db
 Thumbs.db
-
-# Vite
-.vite
+desktop.ini
 
 # TypeScript
 *.tsbuildinfo
 
-# Local development
+# Testing
+coverage/
+.nyc_output/
+test-results/
+playwright-report/
+playwright/.cache/
+
+# Misc
+*.tgz
+*.tar.gz
+*.zip
+*.rar
+
+# IDE and Editor files
+*.sublime-project
+*.sublime-workspace
+.vscode/
+.idea/
+
+# Local configuration files
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
 
-# Testing
-coverage/
-.nyc_output/
+# Database files
+*.db
+*.sqlite
+*.sqlite3
 
-# Misc
-*.tgz
-*.tar.gz
+# Backup files
+*.bak
+*.backup
+*.old
+
+# Lock files (keep package-lock.json but ignore others)
+yarn.lock
+pnpm-lock.yaml
+
+# Security and sensitive files
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+secrets/
+.secrets/
+
+# API keys and tokens (additional patterns)
+*api*key*
+*secret*
+*token*
+*password*
+*credential*
+
+# Large files that shouldn't be in git
+*.mp4
+*.avi
+*.mov
+*.wmv
+*.flv
+*.webm
+*.mkv
+*.zip
+*.rar
+*.7z
+*.tar
+*.gz
+*.bz2
