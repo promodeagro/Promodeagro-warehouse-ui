@@ -1,6 +1,6 @@
 // Order Management Data Types and Dummy Data
 
-export type OrderStatus = 'Placed' | 'Accepted' | 'Packed' | 'Dispatched' | 'Delivered' | 'Cancelled' | 'Returned' | 'Failed' | 'Out of Stock' | 'Items out of Stock' | 'Items No Stock';
+export type OrderStatus = 'Placed' | 'Accepted' | 'Packed' | 'Delivered' | 'Cancelled' | 'Returned' | 'Failed' | 'Out of Stock' | 'Items out of Stock' | 'Items No Stock';
 export type PaymentMode = 'COD' | 'Online';
 
 export interface OrderItem {
@@ -105,7 +105,7 @@ export const orders: Order[] = [
     zone: 'Zone A',
     total_amount: 330,
     payment_mode: 'COD',
-    status: 'Dispatched',
+    status: 'Packed',
     items: [
       { id: 'OI005', product_id: 'P002', product_name: 'Fresh Potatoes', quantity: 5, price: 30, subtotal: 150, is_substituted: false },
       { id: 'OI006', product_id: 'P003', product_name: 'Red Onions', quantity: 3, price: 35, subtotal: 105, is_substituted: false },
@@ -114,7 +114,7 @@ export const orders: Order[] = [
     created_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), // Yesterday
     updated_at: '2025-01-10T10:00:00Z',
     delivery_slot: '11:00 AM - 1:00 PM',
-    packing_status: 'dispatched',
+    packing_status: 'packed',
     assigned_packer_id: 'PKR-002',
     assigned_packer_name: 'Priya Sharma',
     pincode: '110016'

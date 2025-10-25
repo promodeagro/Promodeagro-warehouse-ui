@@ -73,6 +73,19 @@ export default function PackerOverview() {
   const [currentPage, setCurrentPage] = useState<number>(1);
   const cardsPerPage = 12;
   
+  // Packer search and active/inactive filter states
+  const [packerSearchQuery, setPackerSearchQuery] = useState<string>('');
+  const [packerActiveFilter, setPackerActiveFilter] = useState<string>('active');
+  
+  // Packer state management
+  const [packerStates, setPackerStates] = useState<Record<string, boolean>>(() => {
+    const initialState: Record<string, boolean> = {};
+    packers.forEach(packer => {
+      initialState[packer.id] = packer.active;
+    });
+    return initialState;
+  });
+  
   // Pagination for orders table
   const [ordersCurrentPage, setOrdersCurrentPage] = useState<number>(1);
   const ordersPerPage = 10;
@@ -81,7 +94,6 @@ export default function PackerOverview() {
   const [selectedOrders, setSelectedOrders] = useState<Set<string>>(new Set());
   const [showAssignDialog, setShowAssignDialog] = useState<boolean>(false);
   const [selectedPacker, setSelectedPacker] = useState<string>('');
-  const [packerSearchQuery, setPackerSearchQuery] = useState<string>('');
   
   // Reassignment states
   const [showReassignDialog, setShowReassignDialog] = useState<boolean>(false);
@@ -383,6 +395,8 @@ export default function PackerOverview() {
   // Calculate packer workloads for smart assignment
   const packerWorkloads = useMemo(() => {
     const workloads = packers.map(packer => {
+      // Use the state management for active status
+      const isActive = packerStates[packer.id] !== undefined ? packerStates[packer.id] : packer.active;
       const assignedCount = enrichedOrders.filter(order => 
         order.assigned_packer_id === packer.id && order.packing_status === 'assigned'
       ).length;
@@ -403,10 +417,12 @@ export default function PackerOverview() {
       const totalPendingCount = pendingCount + outOfStockCount;
       
       const totalWorkload = assignedCount + pendingCount;
-      const completionPercentage = totalWorkload > 0 ? Math.round((packedCount / (totalWorkload + packedCount)) * 100) : 0;
+      const totalOrders = assignedCount + pendingCount + packedCount;
+      const completionPercentage = totalOrders > 0 ? Math.round((packedCount / totalOrders) * 100) : 0;
       
       return {
         ...packer,
+        active: isActive, // Use the state-managed active status
         assignedCount,
         pendingCount: totalPendingCount, // Include Items No Stock in pending count
         packedCount,
@@ -427,15 +443,41 @@ export default function PackerOverview() {
     })));
     
     return workloads;
-  }, [enrichedOrders, packers]);
+  }, [enrichedOrders, packers, packerStates]);
 
-  // Filter packers based on search query
+  // Filter packers based on search query and active/inactive status
   const filteredPackers = useMemo(() => {
-    if (!packerSearchQuery) return packerWorkloads;
+    let filtered = packerWorkloads;
+    
+    // Filter by search query
+    if (packerSearchQuery) {
+      filtered = filtered.filter(packer => 
+        packer.name.toLowerCase().includes(packerSearchQuery.toLowerCase()) ||
+        packer.id.toLowerCase().includes(packerSearchQuery.toLowerCase()) ||
+        packer.zone?.toLowerCase().includes(packerSearchQuery.toLowerCase())
+      );
+    }
+    
+    // Filter by active/inactive status
+    if (packerActiveFilter === 'active') {
+      filtered = filtered.filter(packer => packer.active === true);
+    } else if (packerActiveFilter === 'inactive') {
+      filtered = filtered.filter(packer => packer.active === false);
+    }
+    // If 'all', don't filter by active status
+    
+    return filtered.sort((a, b) => a.totalWorkload - b.totalWorkload); // Sort by workload (least first)
+  }, [packerWorkloads, packerSearchQuery, packerActiveFilter]);
+
+  // Filter packers for assignment dialog (only active packers)
+  const assignmentPackers = useMemo(() => {
+    if (!packerSearchQuery) return packerWorkloads.filter(p => p.active);
     return packerWorkloads.filter(packer => 
-      packer.name.toLowerCase().includes(packerSearchQuery.toLowerCase()) ||
-      packer.id.toLowerCase().includes(packerSearchQuery.toLowerCase()) ||
-      packer.zone?.toLowerCase().includes(packerSearchQuery.toLowerCase())
+      packer.active && (
+        packer.name.toLowerCase().includes(packerSearchQuery.toLowerCase()) ||
+        packer.id.toLowerCase().includes(packerSearchQuery.toLowerCase()) ||
+        packer.zone?.toLowerCase().includes(packerSearchQuery.toLowerCase())
+      )
     ).sort((a, b) => a.totalWorkload - b.totalWorkload); // Sort by workload (least first)
   }, [packerWorkloads, packerSearchQuery]);
 
@@ -492,10 +534,10 @@ export default function PackerOverview() {
   const paginatedOrders = filteredOrders.slice(ordersStartIndex, ordersEndIndex);
 
   // Pagination logic for packer cards
-  const totalPages = Math.ceil(packers.length / cardsPerPage);
+  const totalPages = Math.ceil(filteredPackers.length / cardsPerPage);
   const startIndex = (currentPage - 1) * cardsPerPage;
   const endIndex = startIndex + cardsPerPage;
-  const paginatedPackers = packers.slice(startIndex, endIndex);
+  const paginatedPackers = filteredPackers.slice(startIndex, endIndex);
 
   const getStatusColor = (status?: string) => {
     switch (status) {
@@ -509,10 +551,10 @@ export default function PackerOverview() {
 
   const getSyncStatusColor = (status: string) => {
     switch (status) {
-      case 'synced': return 'bg-success/10 text-success border-success/20';
-      case 'active': return 'bg-warning/10 text-warning border-warning/20';
-      case 'offline': return 'bg-destructive/10 text-destructive border-destructive/20';
-      default: return 'bg-muted text-muted-foreground';
+      case 'synced': return 'bg-green-100 text-green-700 border-green-200';
+      case 'active': return 'bg-yellow-100 text-yellow-700 border-yellow-200';
+      case 'offline': return 'bg-red-100 text-red-700 border-red-200';
+      default: return 'bg-gray-100 text-gray-700 border-gray-200';
     }
   };
 
@@ -546,6 +588,60 @@ export default function PackerOverview() {
     }, 3000);
   };
 
+  // Update packer last active time (for mobile sync simulation)
+  const updatePackerLastActive = (packerId: string) => {
+    const packer = packers.find(p => p.id === packerId);
+    if (packer) {
+      packer.last_active = new Date().toISOString();
+      // Force re-render by updating a dummy state
+      setCurrentPage(prev => prev);
+    }
+  };
+
+  // Handle individual packer active/inactive toggle
+  const handlePackerToggleChange = (packerId: string, checked: boolean) => {
+    // Find the packer in the packers array
+    const packer = packers.find(p => p.id === packerId);
+    if (packer) {
+      // Update the packer state
+      setPackerStates(prev => ({
+        ...prev,
+        [packerId]: checked
+      }));
+      
+      // Update last active time
+      updatePackerLastActive(packerId);
+      
+      // If packer is being deactivated, unassign all their orders
+      if (!checked) {
+        const packerOrders = enrichedOrders.filter(order => order.assigned_packer_id === packerId);
+        packerOrders.forEach(order => {
+          updateOrder(order.id, {
+            assigned_packer_id: undefined,
+            assigned_packer_name: undefined,
+            packing_status: 'pending'
+          });
+        });
+        
+        if (packerOrders.length > 0) {
+          toast.warning(`Deactivated ${packer.name} - ${packerOrders.length} order(s) unassigned`);
+        }
+        
+        // Auto-switch to inactive tab if packer is deactivated
+        if (packerActiveFilter === 'active') {
+          setPackerActiveFilter('inactive');
+        }
+      } else {
+        // Auto-switch to active tab if packer is activated
+        if (packerActiveFilter === 'inactive') {
+          setPackerActiveFilter('active');
+        }
+      }
+      
+      toast.success(`${packer.name} ${checked ? 'activated' : 'deactivated'}`);
+    }
+  };
+
   // Show initial notification on component mount
   useEffect(() => {
     if (autoAssign) {
@@ -555,6 +651,20 @@ export default function PackerOverview() {
       }, 3000);
     }
   }, []);
+
+  // Simulate mobile sync - update packer last active times periodically
+  useEffect(() => {
+    const mobileSyncInterval = setInterval(() => {
+      // Randomly update some active packers' last active time to simulate mobile activity
+      const activePackers = packers.filter(p => p.active && packerStates[p.id] !== false);
+      if (activePackers.length > 0 && Math.random() > 0.7) { // 30% chance every 30 seconds
+        const randomPacker = activePackers[Math.floor(Math.random() * activePackers.length)];
+        updatePackerLastActive(randomPacker.id);
+      }
+    }, 30000); // Check every 30 seconds
+
+    return () => clearInterval(mobileSyncInterval);
+  }, [packers, packerStates]);
 
   // Reset pagination when filters change
   useEffect(() => {
@@ -568,10 +678,16 @@ export default function PackerOverview() {
       const isNewOrder = new Date(latestOrder.created_at).getTime() > Date.now() - 5000; // Within last 5 seconds
       
       if (isNewOrder && latestOrder.packing_status === 'pending') {
-        toast.success(`New order ${latestOrder.order_number} received and ${latestOrder.assigned_packer_name ? 'auto-assigned' : 'pending assignment'}!`);
+        // Check if any packers are active before auto-assigning
+        const activePackers = packers.filter(p => p.active);
+        if (activePackers.length === 0) {
+          toast.warning(`New order ${latestOrder.order_number} received but no active packers available for assignment!`);
+        } else {
+          toast.success(`New order ${latestOrder.order_number} received and ${latestOrder.assigned_packer_name ? 'auto-assigned' : 'pending assignment'}!`);
+        }
       }
     }
-  }, [enrichedOrders]);
+  }, [enrichedOrders, packers]);
 
   // Selection handlers
   const handleSelectAll = (checked: boolean) => {
@@ -725,6 +841,11 @@ export default function PackerOverview() {
     // Get order details for notifications
     const order = orders.find(o => o.id === orderId);
     const orderNumber = order?.order_number || orderId;
+    
+    // Update packer last active time if order is assigned to a packer
+    if (order?.assigned_packer_id) {
+      updatePackerLastActive(order.assigned_packer_id);
+    }
     
     // Show different notifications based on source
     if (source === 'button') {
@@ -1269,15 +1390,15 @@ export default function PackerOverview() {
                       />
                     </TableHead>
                   )}
+                      <TableHead>Packer</TableHead>
                       <TableHead>Order ID</TableHead>
                       <TableHead>Customer</TableHead>
                       <TableHead>Phone</TableHead>
                         <TableHead className="text-center">Items</TableHead>
+                      <TableHead>Address</TableHead>
                       <TableHead>Pincode</TableHead>
-                      <TableHead>Packer</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Sync</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -1302,19 +1423,6 @@ export default function PackerOverview() {
                           />
                         </TableCell>
                       )}
-                      <TableCell className="font-medium whitespace-nowrap">{order.order_number}</TableCell>
-                      <TableCell className="whitespace-nowrap">{order.customer_name}</TableCell>
-                      <TableCell className="text-sm whitespace-nowrap">{order.customer_phone}</TableCell>
-                      <TableCell className="text-center">
-                        <span className="text-sm font-semibold inline-block w-full">{order.items?.length || 0}</span>
-                      </TableCell>
-                      <TableCell className="whitespace-nowrap">
-                        <Badge variant="outline">
-                          {order.pincode || 
-                           (order.address ? order.address.split(',').pop()?.trim() : 'N/A') || 
-                           'N/A'}
-                        </Badge>
-                      </TableCell>
                       <TableCell className="whitespace-nowrap">
                         <div className="flex items-center gap-2">
                           {order.assigned_packer_id ? (
@@ -1344,86 +1452,36 @@ export default function PackerOverview() {
                           )}
                         </div>
                       </TableCell>
+                      <TableCell className="font-medium whitespace-nowrap">{order.order_number}</TableCell>
+                      <TableCell className="whitespace-nowrap">{order.customer_name}</TableCell>
+                      <TableCell className="text-sm whitespace-nowrap">{order.customer_phone}</TableCell>
+                      <TableCell className="text-center whitespace-nowrap">
+                        <span className="text-sm font-semibold">{order.items?.length || 0}</span>
+                      </TableCell>
+                      <TableCell className="text-sm whitespace-nowrap max-w-[200px] truncate">
+                        {order.address || 'N/A'}
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap">
+                        <Badge variant="outline" className="bg-gray-100 text-gray-700 border-gray-300">
+                          {order.pincode || 
+                           (order.address ? order.address.split(',').pop()?.trim() : 'N/A') || 
+                           'N/A'}
+                        </Badge>
+                      </TableCell>
                       <TableCell className="whitespace-nowrap">
                         <Badge className={getStatusColor(order.packing_status)}>
                           {order.packing_status === 'packed' && '✅ '}
                           {order.packing_status === 'pending' && '⏳ '}
                           {order.packing_status === 'assigned' && '📋 '}
                           {order.packing_status === 'out_of_stock' && '🔴 '}
-          {order.packing_status === 'out_of_stock' ? 'ITEMS NO STOCK' : order.packing_status?.replace('_', ' ').toUpperCase() || 'PENDING'}
+                          {order.packing_status === 'out_of_stock' ? 'ITEMS NO STOCK' : 
+                           order.packing_status?.replace('_', ' ').toUpperCase() || 'PENDING'}
                         </Badge>
                       </TableCell>
                       <TableCell className="whitespace-nowrap">
-                        <div className="flex items-center justify-center">
-                          {order.sync_status === 'synced' ? (
-                            <Wifi className="h-5 w-5 text-green-500" />
-                          ) : (
-                            <WifiOff className="h-5 w-5 text-red-500" />
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex items-center gap-1">
-                          {order.packing_status === 'pending' && !order.assigned_packer_name && (
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
-                              onClick={() => handleManualAssign(order.id)}
-                              className="h-7 text-xs"
-                            >
-                              Start
-                            </Button>
-                          )}
-                          {order.packing_status === 'assigned' && (
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
-                              onClick={() => handleStatusUpdate(order.id, 'pending')}
-                              className="h-7 text-xs"
-                            >
-                              Start
-                            </Button>
-                          )}
-                          {order.assigned_packer_name && order.packing_status !== 'packed' && (
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
-                              onClick={() => handleReassignOrder(order.id)}
-                              className="h-7 text-xs text-blue-600 border-blue-200 hover:bg-blue-50"
-                            >
-                              Reassign
-                            </Button>
-                          )}
-                          
-                          {/* 
-                            Mobile App Simulation Buttons - FOR TESTING ONLY
-                            These buttons simulate mobile app actions for testing purposes.
-                            REMOVE THESE BUTTONS when integrating with real mobile app.
-                          */}
-                          {order.packing_status === 'pending' && (
-                            <Button 
-                              variant="secondary" 
-                              size="sm" 
-                              onClick={() => simulateMobileAppUpdate(order.id, 'completed')}
-                              className="h-7 text-xs bg-green-100 text-green-700 hover:bg-green-200"
-                            >
-                              📱 Complete
-                            </Button>
-                          )}
-                          {order.packing_status === 'pending' && (
-                            <Button 
-                              variant="secondary" 
-                              size="sm" 
-                              onClick={() => simulateMobileAppUpdate(order.id, 'out_of_stock')}
-                              className="h-7 text-xs bg-red-100 text-red-700 hover:bg-red-200"
-                            >
-                              📱 Items No Stock
-                            </Button>
-                          )}
-                          
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
+                        <div className="flex items-center gap-2">
+                          <WifiOff className="h-4 w-4 text-red-500" />
+                          <span className="text-sm text-gray-700">Sync</span>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -1438,6 +1496,50 @@ export default function PackerOverview() {
         </CardContent>
       </Card>
 
+      {/* Packer Search and Filter Controls */}
+      <Card>
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between">
+            {/* Search Bar - Left side with equal spacing */}
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <Input 
+                placeholder="Search packers by name, ID, or zone..." 
+                value={packerSearchQuery} 
+                onChange={(e) => setPackerSearchQuery(e.target.value)} 
+                className="pl-10 h-10" 
+              />
+            </div>
+            
+            {/* Right side controls - Right side with equal spacing */}
+            <div className="flex items-center gap-4">
+              {/* Active/Inactive Filter Dropdown */}
+              <div className="flex items-center gap-3">
+                <span className="text-sm font-medium">Status:</span>
+                <Select value={packerActiveFilter} onValueChange={(value) => {
+                  setPackerActiveFilter(value);
+                  setCurrentPage(1); // Reset to first page when filter changes
+                }}>
+                  <SelectTrigger className="w-[140px] h-10">
+                    <SelectValue placeholder="All Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Packers</SelectItem>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="inactive">Inactive</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              {/* Results Count */}
+              <div className="text-sm text-muted-foreground">
+                {filteredPackers.length} packer{filteredPackers.length !== 1 ? 's' : ''} found
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Packer Overview cards */}
       <div className="grid grid-cols-3 gap-5">
         {paginatedPackers.map(p => {
@@ -1445,20 +1547,37 @@ export default function PackerOverview() {
           return (
           <Card key={p.id} className="w-[377px] h-[335px] flex-shrink-0 hover:shadow-lg transition-shadow">
             <CardContent className="p-6 space-y-4">
+              {/* Header Section with Avatar and Eye Icon */}
               <div className="flex items-start justify-between">
-                <div>
-                  <h3 className="font-semibold">{p.name}</h3>
-                  <p className="text-xs text-muted-foreground">{p.id}</p>
-                  <div className="flex items-center gap-3 text-xs text-muted-foreground mt-2">
-                    <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> Zone: {p.zone} ({p.pincode_range})</span>
-                    <span className="flex items-center gap-1"><Phone className="h-3 w-3" /> {p.phone}</span>
+                <div className="flex items-start gap-3">
+                  {/* Avatar Icon - Moved down 10px */}
+                  <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center flex-shrink-0 mt-[10px]">
+                    <User className="h-5 w-5 text-primary-foreground" />
+                  </div>
+                  
+                  {/* Packer Info */}
+                  <div>
+                    <h3 className="font-semibold text-lg">{p.name}</h3>
+                    <p className="text-xs text-muted-foreground">{p.id}</p>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
+                      <Phone className="h-3 w-3" />
+                      <span>{p.phone}</span>
+                    </div>
                   </div>
                 </div>
-                <Badge className={getSyncStatusColor(p.sync_status)}>
-                  {getSyncIcon(p.sync_status)} {p.sync_status.toUpperCase()}
-                </Badge>
+                
+                {/* Eye Icon - Navigate to PackerDetails */}
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-8 w-8"
+                  onClick={() => navigate(`/order-management/packer-details/${p.id}`)}
+                >
+                  <Eye className="h-4 w-4 text-muted-foreground" />
+                </Button>
               </div>
 
+              {/* Status Boxes Section */}
               <div className="grid grid-cols-3 gap-3">
                 <div className="text-center p-3 rounded-lg bg-gray-100 border border-gray-200">
                   <p className="text-2xl font-bold text-gray-800">{workload?.assignedCount || 0}</p>
@@ -1474,19 +1593,66 @@ export default function PackerOverview() {
                 </div>
               </div>
 
+              {/* Completion Section */}
               <div>
                 <div className="flex items-center justify-between text-xs mb-1">
                   <span className="text-muted-foreground">Completion</span>
                   <span className="font-semibold text-foreground">{workload?.completionPercentage || 0}%</span>
                 </div>
                 <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
-                  <div className="h-full bg-success rounded-full transition-all duration-500" style={{ width: `${workload?.completionPercentage || 0}%` }} />
+                  <div 
+                    className="h-full bg-success rounded-full transition-all duration-500" 
+                    style={{ width: `${workload?.completionPercentage || 0}%` }} 
+                  />
                 </div>
               </div>
 
-              <div className="flex items-center justify-between text-xs text-muted-foreground">
-                <span>Last active: {Math.floor(Math.random() * 60)}m ago</span>
-                <span className="text-xs text-muted-foreground">Zone: {p.zone}</span>
+              {/* Footer Section with WiFi, View Details Button, Zone, and Active Toggle */}
+              <div className="space-y-3">
+                {/* Activity and Zone */}
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span>Last active: {(() => {
+                    const lastActive = new Date(p.last_active);
+                    const now = new Date();
+                    const diffInMinutes = Math.floor((now.getTime() - lastActive.getTime()) / (1000 * 60));
+                    
+                    if (diffInMinutes < 1) return 'Just now';
+                    if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
+                    
+                    const diffInHours = Math.floor(diffInMinutes / 60);
+                    if (diffInHours < 24) return `${diffInHours}h ago`;
+                    
+                    const diffInDays = Math.floor(diffInHours / 24);
+                    return `${diffInDays}d ago`;
+                  })()}</span>
+                  <span>Zone: Promode Agro</span>
+                </div>
+                
+                {/* WiFi, View Details Button, and Active Toggle - Aligned in one row with increased spacing */}
+                <div className="flex items-center justify-between pt-[4px]">
+                  {/* WiFi Icon */}
+                  <Wifi className="h-4 w-4 text-primary" />
+                  
+                  {/* View Details Button - Navigate to PackerOrders */}
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="bg-white hover:bg-gray-50 text-gray-700 hover:text-gray-900"
+                    onClick={() => navigate(`/order-management/packer-orders/${p.id}`)}
+                  >
+                    <User className="h-4 w-4 mr-2 text-gray-700 hover:text-gray-900" />
+                    View Details
+                  </Button>
+                  
+                  {/* Active Toggle */}
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground">Active</span>
+                    <Switch 
+                      checked={p.active} 
+                      onCheckedChange={(checked) => handlePackerToggleChange(p.id, checked)}
+                    />
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -1562,12 +1728,12 @@ export default function PackerOverview() {
               {/* Packer List with ScrollArea */}
               <ScrollArea className="h-[400px] rounded-md border p-4">
                 <div className="space-y-2">
-                  {filteredPackers.length === 0 ? (
+                  {assignmentPackers.length === 0 ? (
                     <div className="text-center py-8 text-muted-foreground">
-                      No packers found
+                      No active packers available for assignment
                     </div>
                   ) : (
-                    filteredPackers.map((packer) => (
+                    assignmentPackers.map((packer) => (
                 <div
                   key={packer.id}
                         className={`p-4 rounded-lg border cursor-pointer transition-all ${

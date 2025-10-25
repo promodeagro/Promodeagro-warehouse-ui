@@ -31,6 +31,8 @@ import OrdersList from '@/components/order-management/OrdersList';
 import OrderDetail from '@/components/order-management/OrderDetail';
 import AddNewOrder from '@/components/order-management/AddNewOrder';
 import PackerOverview from '@/components/order-management/PackerOverview';
+import PackerDetails from '@/components/order-management/PackerDetails';
+import PackerOrders from '@/components/order-management/PackerOrders';
 
 // Import Pincode and Stock Adjustment components
 import { PincodeManagement } from '@/components/pincode/PincodeManagement';
@@ -122,6 +124,8 @@ function App() {
                   <Route path="/order-management/orders/:id" element={<OrderDetail />} />
                   <Route path="/order-management/add-order" element={<AddNewOrder />} />
                   <Route path="/order-management/packer-overview" element={<PackerOverview />} />
+                  <Route path="/order-management/packer-details/:packerId" element={<PackerDetails />} />
+                  <Route path="/order-management/packer-orders/:packerId" element={<PackerOrders />} />
                   <Route path="/pincodes" element={<PincodeManagement />} />
                   
                   {/* Delivery Management */}
